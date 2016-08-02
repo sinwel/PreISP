@@ -687,7 +687,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 
 #if WDR_USE_THUMB_LUMA
 
-	#define SHIFT_BIT		 	5 // 4 , 5 , 6
+	#define SHIFT_BIT		 	4 // 4 , 5 , 6
 	#define SHIFT_BIT_SCALE 	(SHIFT_BIT - 3)
 	#define MAX_BIT_VALUE  		(1<<SHIFT_BIT) 
 	#define MAX_BIT_V_MINUS1 	((1<<SHIFT_BIT) - 1)
@@ -709,7 +709,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	pweight_mat = pweight;
 	plight = (unsigned short*)malloc(w*h*sizeof(unsigned short));
 
-#if 1
+
 
 	unsigned short*   pTmp0 = g_BaseThumbBuf;
 	for (y = 0; y < sh ; y++)
@@ -718,25 +718,19 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 		{
 			int idx, idy; 
 			int ScaleDownlight = 0;
-		#if 1
+
 			for ( int ii = 0 ; ii < (1<<SHIFT_BIT_SCALE)  ; ii++ )
 				for ( int jj = 0 ; jj < (1<<SHIFT_BIT_SCALE)  ; jj++ )
 					ScaleDownlight += pTmp0[ii*wThumb + jj];
 
 			ScaleDownlight  >>= (2*SHIFT_BIT - 4 );
-		#else
-			ScaleDownlight = pTmp0[x];	
-			ScaleDownlight >>= 2;
-		#endif
 			
 			lindex = ((u32)ScaleDownlight + 1024) >> 11;
-		#if 1
-			idx = (x + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
-			idy = (y + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
-		#else
+
+			//idx = (x + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
+			//idy = (y + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
 			idx = x;
 			idy = y;
-		#endif
 			pcount_mat [lindex][idy*sw + idx] = pcount_mat [lindex][idy*sw + idx] + 1;
 			pweight_mat[lindex][idy*sw + idx] = pweight_mat[lindex][idy*sw + idx] + ScaleDownlight;
 
@@ -744,7 +738,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 		pTmp0 += wThumb;
 	}
 
-
+	/* SPLIT_SIZE*SPLIT_SIZE 的点设置为 平均值 */
 	for (y = 0; y < sh ; y++)
 	{
 		for (x = 0; x < sw ; x++)
@@ -761,44 +755,6 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 					plight[(y*w + x)*SPLIT_SIZE + ii*w + jj] = sumlight;
 		}
 	}
-#else
-	p1 = pixel_in;
-	/* sum the 8x8 block */
-	for (y = 0; y < h/SCALER_FACTOR_R2T  ; y++)
-	{
-		for (x = 0; x < w/SCALER_FACTOR_R2T ; x++)
-		{
-			//int idx, idy;
-			light = 0;
-			unsigned short*   pTmp0 = p1 + (y * w + x) * SCALER_FACTOR_R2T;
-			for ( int ii = 0 ; ii < SCALER_FACTOR_R2T ; ii++ )
-				for ( int jj = 0 ; jj < SCALER_FACTOR_R2T ; jj++ )
-					light += pTmp0[ii*w + jj];
-			light >>= 5; // 14 bit, linear gain is 8
-
-			for ( int ii = 0 ; ii < SCALER_FACTOR_R2T ; ii++ )
-				for ( int jj = 0 ; jj < SCALER_FACTOR_R2T ; jj++ )
-					plight[(y * w + x) * SCALER_FACTOR_R2T + ii*w + jj] = light;
-				
-			lindex = ((u32)light + 1024) >> 11;
-
-			//idx = (x + 64) >> 7;
-			//idy = (y + 64) >> 7;
-			//idx = (x + 4) >> 3;
-			//idy = (y + 4) >> 3;
-			pcount_mat[lindex][y*sw + x] = pcount_mat[lindex][y*sw + x] + 1;
-			pweight_mat[lindex][y*sw + x] = pweight_mat[lindex][y*sw + x] + light;
-		}
-
-	}
-#endif
-
-
-
-
-
-
-
 
 	
 #else
@@ -823,36 +779,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	p2 = pixel_in + w;
 	p3 = pixel_in + 2 * w;
 
-  #if 0
-	/* sum the 8x8 block */
-	for (y = 0; y < h/SCALER_FACTOR_R2T  ; y++)
-	{
-		for (x = 0; x < w/SCALER_FACTOR_R2T ; x++)
-		{
-			//int idx, idy;
-			light = 0;
-			unsigned short*   pTmp0 = p1 + (y * w + x) * SCALER_FACTOR_R2T;
-			for ( int ii = 0 ; ii < SCALER_FACTOR_R2T ; ii++ )
-				for ( int jj = 0 ; jj < SCALER_FACTOR_R2T ; jj++ )
-					light += pTmp0[ii*w + jj];
-			light >>= 5; // 14 bit, linear gain is 8
 
-			for ( int ii = 0 ; ii < SCALER_FACTOR_R2T ; ii++ )
-				for ( int jj = 0 ; jj < SCALER_FACTOR_R2T ; jj++ )
-					plight[(y * w + x) * SCALER_FACTOR_R2T + ii*w + jj] = light;
-				
-			lindex = ((u32)light + 1024) >> 11;
-
-			//idx = (x + 64) >> 7;
-			//idy = (y + 64) >> 7;
-			//idx = (x + 4) >> 3;
-			//idy = (y + 4) >> 3;
-			pcount_mat[lindex][y*sw + x] = pcount_mat[lindex][y*sw + x] + 1;
-			pweight_mat[lindex][y*sw + x] = pweight_mat[lindex][y*sw + x] + light;
-		}
-
-	}
-  #else
 	for (y = 1; y < h - 1; y++)
 	{
 		for (x = 1; x < w - 1; x++)
@@ -895,7 +822,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 		p2 += w;
 		p3 += w;
 	}
-  #endif
+
 /*
 	for (y = 0; y < sh; y++)
 	{
