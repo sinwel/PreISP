@@ -687,11 +687,11 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 
 #if WDR_USE_THUMB_LUMA
 
-	#define SHIFT_BIT		 	3 // 4 , 5 , 6
+	#define SHIFT_BIT		 	5 // 4 , 5 , 6
 	#define SHIFT_BIT_SCALE 	(SHIFT_BIT - 3)
 	#define MAX_BIT_VALUE  		(1<<SHIFT_BIT) 
 	#define MAX_BIT_V_MINUS1 	((1<<SHIFT_BIT) - 1)
-	#define SPLIT_SIZE 			8
+	#define SPLIT_SIZE 			MAX_BIT_VALUE
 	
     int wThumb        = w  / SCALER_FACTOR_R2T;      // Thumb data width  (floor)
     int hThumb        = h  / SCALER_FACTOR_R2T;      // Thumb data height (floor)
