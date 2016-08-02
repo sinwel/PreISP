@@ -687,7 +687,8 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 
 #if WDR_USE_THUMB_LUMA
 
-	#define SHIFT_BIT		 	3
+	#define SHIFT_BIT		 	3 // 4 , 5 , 6
+	#define SHIFT_BIT_SCALE 	(SHIFT_BIT - 3)
 	#define MAX_BIT_VALUE  		(1<<SHIFT_BIT) 
 	#define MAX_BIT_V_MINUS1 	((1<<SHIFT_BIT) - 1)
 	#define SPLIT_SIZE 			8
@@ -717,19 +718,21 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 		{
 			int idx, idy; 
 			int ScaleDownlight = 0;
-		#if 0
-			for ( int ii = 0 ; ii < 8 ; ii++ )
-				for ( int jj = 0 ; jj < 8 ; jj++ )
-					ScaleDownlight += (pTmp0[ii*wThumb + jj] >> 6);
+		#if 1
+			for ( int ii = 0 ; ii < (1<<SHIFT_BIT_SCALE)  ; ii++ )
+				for ( int jj = 0 ; jj < (1<<SHIFT_BIT_SCALE)  ; jj++ )
+					ScaleDownlight += pTmp0[ii*wThumb + jj];
+
+			ScaleDownlight  >>= (2*SHIFT_BIT - 4 );
 		#else
-			ScaleDownlight = pTmp0[x];		
-		#endif
+			ScaleDownlight = pTmp0[x];	
 			ScaleDownlight >>= 2;
+		#endif
 			
 			lindex = ((u32)ScaleDownlight + 1024) >> 11;
-		#if 0
-			idx = (x + 4) >> 3;
-			idy = (y + 4) >> 3;
+		#if 1
+			idx = (x + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
+			idy = (y + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
 		#else
 			idx = x;
 			idy = y;
@@ -740,24 +743,8 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 		}
 		pTmp0 += wThumb;
 	}
-/*	
-	for (y = 0; y < hThumb ; y++)
-	{
-		for (x = 0; x < wThumb ; x++)
-		{
-			light = 0;
-			unsigned short*   pTmp1 = pixel_in + (y * w + x) * SCALER_FACTOR_R2T;
-			for ( int ii = 0 ; ii < SCALER_FACTOR_R2T ; ii++ )
-				for ( int jj = 0 ; jj < SCALER_FACTOR_R2T ; jj++ )
-					light += pTmp1[ii*w + jj];
-			light >>= 5; // 14 bit, linear gain is 8
 
-			for ( int ii = 0 ; ii < SCALER_FACTOR_R2T ; ii++ )
-				for ( int jj = 0 ; jj < SCALER_FACTOR_R2T ; jj++ )
-					plight[(y * w + x) * SCALER_FACTOR_R2T + ii*w + jj] = light;
-		}
-	}
- */	
+
 	for (y = 0; y < sh ; y++)
 	{
 		for (x = 0; x < sw ; x++)
