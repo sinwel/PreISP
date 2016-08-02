@@ -687,12 +687,16 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 
 #if WDR_USE_THUMB_LUMA
 
-#define HIST_BLOCK 64
+	#define SHIFT_BIT		 	3
+	#define MAX_BIT_VALUE  		(1<<SHIFT_BIT) 
+	#define MAX_BIT_V_MINUS1 	((1<<SHIFT_BIT) - 1)
+	#define SPLIT_SIZE 			8
+	
     int wThumb        = w  / SCALER_FACTOR_R2T;      // Thumb data width  (floor)
     int hThumb        = h  / SCALER_FACTOR_R2T;      // Thumb data height (floor)
 	int         Thumb16Stride   = (wThumb*16 + 31) / 32 * 4; 
-	sw = wThumb;
-	sh = hThumb;
+	sw = w/SPLIT_SIZE;
+	sh = h/SPLIT_SIZE;
 	for (i = 0; i < 9; i++)
 	{
 		pcount[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
@@ -705,15 +709,42 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	plight = (unsigned short*)malloc(w*h*sizeof(unsigned short));
 
 #if 1
+
 	unsigned short*   pTmp0 = g_BaseThumbBuf;
+	for (y = 0; y < sh ; y++)
+	{
+		for (x = 0; x < sw ; x++)
+		{
+			int idx, idy; 
+			int ScaleDownlight = 0;
+		#if 0
+			for ( int ii = 0 ; ii < 8 ; ii++ )
+				for ( int jj = 0 ; jj < 8 ; jj++ )
+					ScaleDownlight += (pTmp0[ii*wThumb + jj] >> 6);
+		#else
+			ScaleDownlight = pTmp0[x];		
+		#endif
+			ScaleDownlight >>= 2;
+			
+			lindex = ((u32)ScaleDownlight + 1024) >> 11;
+		#if 0
+			idx = (x + 4) >> 3;
+			idy = (y + 4) >> 3;
+		#else
+			idx = x;
+			idy = y;
+		#endif
+			pcount_mat [lindex][idy*sw + idx] = pcount_mat [lindex][idy*sw + idx] + 1;
+			pweight_mat[lindex][idy*sw + idx] = pweight_mat[lindex][idy*sw + idx] + ScaleDownlight;
+
+		}
+		pTmp0 += wThumb;
+	}
+/*	
 	for (y = 0; y < hThumb ; y++)
 	{
 		for (x = 0; x < wThumb ; x++)
 		{
-			//int idx, idy; 
-			int ScaleDownlight = pTmp0[x]; 
-			ScaleDownlight >>= 2;
-		
 			light = 0;
 			unsigned short*   pTmp1 = pixel_in + (y * w + x) * SCALER_FACTOR_R2T;
 			for ( int ii = 0 ; ii < SCALER_FACTOR_R2T ; ii++ )
@@ -724,18 +755,25 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			for ( int ii = 0 ; ii < SCALER_FACTOR_R2T ; ii++ )
 				for ( int jj = 0 ; jj < SCALER_FACTOR_R2T ; jj++ )
 					plight[(y * w + x) * SCALER_FACTOR_R2T + ii*w + jj] = light;
-
-		
-			lindex = ((u32)ScaleDownlight + 1024) >> 11;
-
-			pcount_mat[lindex][y*sw + x] = pcount_mat[lindex][y*sw + x] + 1;
-			pweight_mat[lindex][y*sw + x] = pweight_mat[lindex][y*sw + x] + ScaleDownlight;
-
 		}
-
-		pTmp0 += wThumb;
 	}
+ */	
+	for (y = 0; y < sh ; y++)
+	{
+		for (x = 0; x < sw ; x++)
+		{
+			unsigned long sumlight = 0;
+			unsigned short*   pTmp1 = pixel_in + (y*w + x)*SPLIT_SIZE ;
+			for ( int ii = 0 ; ii < SPLIT_SIZE ; ii++ )
+				for ( int jj = 0 ; jj < SPLIT_SIZE ; jj++ )
+					sumlight += pTmp1[ii*w + jj];
+			sumlight >>= 11; // 14 bit, linear gain is 8
 
+			for ( int ii = 0 ; ii < SPLIT_SIZE ; ii++ )
+				for ( int jj = 0 ; jj < SPLIT_SIZE; jj++ )
+					plight[(y*w + x)*SPLIT_SIZE + ii*w + jj] = sumlight;
+		}
+	}
 #else
 	p1 = pixel_in;
 	/* sum the 8x8 block */
@@ -1042,13 +1080,16 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 		{
 
 		#if WDR_USE_THUMB_LUMA
-
-			if ((x & 7) == 0)
+			
+			if ((x & MAX_BIT_V_MINUS1) == 0)
 			{
 				for (i = 0; i < 9; i++)
 				{
-					left[i] = (pweight_mat[i][(y >> 3)*sw + (x >> 3)] * (8 - (y & 7)) + pweight_mat[i][(y >> 3)*sw + (x >> 3) + sw] * (y & 7)) / 8;
-					right[i] = (pweight_mat[i][(y >> 3)*sw + (x >> 3) + 1] * (8 - (y & 7)) + pweight_mat[i][(y >> 3)*sw + (x >> 3) + sw + 1] * (y & 7)) / 8;
+					left[i] = (pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT)] * (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1)) 
+						+ pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+					
+					right[i] = (pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + 1] * (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1)) 
+						+ pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw + 1] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 				}
 			}
 
@@ -1060,8 +1101,8 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			}
 			lindex = light >> 11;
 
-			weight1 = (left[lindex] * (8 - (x & 7)) + right[lindex] * (x & 7)) / 8;
-			weight2 = (left[lindex + 1] * (8 - (x & 7)) + right[lindex + 1] * (x & 7)) / 8;
+			weight1 = (left[lindex] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+			weight2 = (left[lindex + 1] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex + 1] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 			weight = (weight1*(2048 - (light & 2047)) + weight2*(light & 2047)) / 2048;
 
 //			*pixel_out++ = weight/16;

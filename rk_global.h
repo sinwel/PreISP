@@ -51,7 +51,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-#define     WDR_USE_2D_PLANAR_FILTER       1 
+#define     WDR_USE_2D_PLANAR_FILTER       0 
 #define     WDR_USE_THUMB_LUMA             1 
 
 
