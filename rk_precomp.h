@@ -1,0 +1,30 @@
+// 
+//////////////////////////////////////////////////////////////////////////
+// File: rk_precomp.h
+// Desc: Precompile
+// 
+// Date: Revised by yousf 20160323
+//
+//////////////////////////////////////////////////////////////////////////
+// 
+#pragma  once
+#ifndef _RK_PRECOMP_H
+#define _RK_PRECOMP_H
+
+
+//////////////////////////////////////////////////////////////////////////
+////-------- Header files
+// 
+#include "rk_typedef.h"              // Type definition
+#include "rk_global.h"               // Global definition
+#include "rk_memory.h"               // Memory operation
+#include "rk_scaler.h"               // Scaler
+#include "rk_mfnr.h"                 // MFNR: Multi-Frame Noise Reduction
+
+
+//////////////////////////////////////////////////////////////////////////
+
+#endif // _RK_PRECOMP_H
+
+
+
