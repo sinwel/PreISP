@@ -10,7 +10,7 @@
 //
 #include "rk_memory.h"               // Memory operation
 
-
+#include <assert.h>
 //////////////////////////////////////////////////////////////////////////
 ////-------- Functions Definition
 //
@@ -687,7 +687,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 
 #if WDR_USE_THUMB_LUMA
 
-	#define SHIFT_BIT		 	4 // 4 , 5 , 6
+	#define SHIFT_BIT		 	8 // 4 , 5 , 6
 	#define SHIFT_BIT_SCALE 	(SHIFT_BIT - 3)
 	#define MAX_BIT_VALUE  		(1<<SHIFT_BIT) 
 	#define MAX_BIT_V_MINUS1 	((1<<SHIFT_BIT) - 1)
@@ -695,8 +695,10 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	
     int wThumb        = w  / SCALER_FACTOR_R2T;      // Thumb data width  (floor)
     int hThumb        = h  / SCALER_FACTOR_R2T;      // Thumb data height (floor)
-	int         Thumb16Stride   = (wThumb*16 + 31) / 32 * 4; 
-	sw = w/SPLIT_SIZE;
+	int Thumb16Stride   = (wThumb*16 + 31) / 32 * 4; 
+
+  #if 0
+  	sw = w/SPLIT_SIZE;
 	sh = h/SPLIT_SIZE;
 	for (i = 0; i < 9; i++)
 	{
@@ -708,7 +710,6 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	pcount_mat = pcount;
 	pweight_mat = pweight;
 	plight = (unsigned short*)malloc(w*h*sizeof(unsigned short));
-
 
 
 	unsigned short*   pTmp0 = g_BaseThumbBuf;
@@ -755,7 +756,72 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 					plight[(y*w + x)*SPLIT_SIZE + ii*w + jj] = sumlight;
 		}
 	}
+  #else
+  	sw = (w + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
+	sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
+	for (i = 0; i < 9; i++)
+	{
+		pcount[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
+		pweight[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
+		memset(pcount[i], 0, sw*sh*sizeof(unsigned long));
+		memset(pweight[i], 0, sw*sh*sizeof(unsigned long));
+	}
+	pcount_mat = pcount;
+	pweight_mat = pweight;
+	plight = (unsigned short*)malloc(w*h*sizeof(unsigned short));
 
+
+  	p1 = g_BaseThumbBuf;
+	p2 = g_BaseThumbBuf + wThumb;
+	p3 = g_BaseThumbBuf + 2 * wThumb;
+
+
+	for (y = 1; y < hThumb - 1 ; y++)
+	{
+		for (x = 1; x < wThumb - 1 ; x++)
+		{
+			int idx, idy; 
+			int ScaleDownlight = 0;
+			
+			ScaleDownlight = p1[x - 1] + 2 * p1[x] + p1[x + 1] + 2 * p2[x - 1] + 4 * p2[x] + 2 * p2[x + 1] + p3[x - 1] + 2 * p3[x] + p3[x + 1];
+			ScaleDownlight >>= 6;
+
+			
+			lindex = ((u32)ScaleDownlight + 1024) >> 11;
+
+			idx = (x + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
+			idy = (y + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
+			assert(idy < sh);
+			assert(idx < sw);
+			pcount_mat [lindex][idy*sw + idx] = pcount_mat [lindex][idy*sw + idx] + 1;
+			pweight_mat[lindex][idy*sw + idx] = pweight_mat[lindex][idy*sw + idx] + ScaleDownlight;
+
+		}
+		p1 += wThumb;
+		p2 += wThumb;
+		p3 += wThumb;
+	}
+
+
+  	p1 = pixel_in; // Gain is 8
+	p2 = pixel_in + w;
+	p3 = pixel_in + 2 * w;
+
+	for (y = 1; y < h - 1 ; y++)
+	{
+		for (x = 1; x < w-1 ; x++)
+		{
+			int sumlight = 0;
+			sumlight = p1[x - 1] + 2 * p1[x] + p1[x + 1] + 2 * p2[x - 1] + 4 * p2[x] + 2 * p2[x + 1] + p3[x - 1] + 2 * p3[x] + p3[x + 1];
+			sumlight >>= 3; // 10 + 3 + 4 - 3
+			plight[y*w + x] = sumlight;
+		}
+		p1 += w;
+		p2 += w;
+		p3 += w;
+	}
+
+  #endif
 	
 #else
 	sw = (w + 127) >> 7;
@@ -989,7 +1055,6 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	unsigned long weight;
 	for (y = 0; y < h; y++)
 	{
-
 		for (x = 0; x < w; x++)
 		{
 
