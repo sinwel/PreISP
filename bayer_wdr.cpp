@@ -110,7 +110,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 {
 	int		i;
 	int		x, y;
-	unsigned long		*pcount[9], **pcount_mat;
+	RK_U16		*pcount[9], **pcount_mat;
 	unsigned long		*pweight[9], **pweight_mat;
 	unsigned short		sw, sh;
 	unsigned short		light;
@@ -195,9 +195,9 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	for (i = 0; i < 9; i++)
 	{
-		pcount[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
+		pcount[i] = (RK_U16*)malloc(sw*sh*sizeof(RK_U16));
 		pweight[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
-		memset(pcount[i], 0, sw*sh*sizeof(unsigned long));
+		memset(pcount[i], 0, sw*sh*sizeof(RK_U16));
 		memset(pweight[i], 0, sw*sh*sizeof(unsigned long));
 	}
 	pcount_mat = pcount;
@@ -228,7 +228,10 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			assert(idy < sh);
 			assert(idx < sw);
 			//pcount_mat [lindex][idy*sw + idx] = pcount_mat [lindex][idy*sw + idx] + 64;
+			// 256x256 / 8x8 is 1024, so 10bit is enough.
+			// filter do << 2, so 12 bit is OK.
 			pcount_mat [lindex][idy*sw + idx] = pcount_mat [lindex][idy*sw + idx] + 1;
+			// 256x256 / 8x8 is 1024, so 10+3(Gain)+10bit = 23 is enough.
 			pweight_mat[lindex][idy*sw + idx] = pweight_mat[lindex][idy*sw + idx] + ScaleDownlight;
 
 		}
@@ -266,9 +269,9 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	sh = sh + 1;
 	for (i = 0; i < 9; i++)
 	{
-		pcount[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
+		pcount[i] = (RK_U16*)malloc(sw*sh*sizeof(RK_U16));
 		pweight[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
-		memset(pcount[i], 0, sw*sh*sizeof(unsigned long));
+		memset(pcount[i], 0, sw*sh*sizeof(RK_U16));
 		memset(pweight[i], 0, sw*sh*sizeof(unsigned long));
 	}
 	pcount_mat = pcount;
@@ -396,7 +399,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 					tr = pcount_mat[i + 1][y*sw + x];
 				else
 					tr = 0;
-				pcount_mat[i][y*sw + x] = (tl) + (tm *2) + (tr);
+				pcount_mat[i][y*sw + x] = (tl) + (tm *2) + (tr);// enlarge 4 times.
 			}
 		}
 	}
@@ -466,7 +469,6 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 
 #if WDR_USE_2D_PLANAR_FILTER
 
-	
 	for (i = 0; i < 9; i++)
 	{
 		for (y = 0; y < sh; y++)
@@ -474,7 +476,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			for (x = 0; x < sw; x++)
 			{
 				if (pcount_mat[i][y*sw + x])
-					pweight_mat[i][y*sw + x] = 4*pweight_mat[i][y*sw + x]) / (16*pcount_mat[i][y*sw + x]);
+					pweight_mat[i][y*sw + x] = ((double)64.0*(double)pweight_mat[i][y*sw + x]) / (double)pcount_mat[i][y*sw + x];
 				else
 					pweight_mat[i][y*sw + x] = 0;
 
@@ -491,7 +493,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			for (x = 0; x < sw; x++)
 			{
 				if (pcount_mat[i][y*sw + x])
-					pweight_mat[i][y*sw + x] = ((double)64.0*(double)pweight_mat[i][y*sw + x]) / (double)pcount_mat[i][y*sw + x];
+					pweight_mat[i][y*sw + x] = 4*pweight_mat[i][y*sw + x] / (pcount_mat[i][y*sw + x]);
 				else
 					pweight_mat[i][y*sw + x] = 0;
 

@@ -28,6 +28,9 @@
 #define MAX_BIT_V_MINUS1 	((1<<SHIFT_BIT) - 1)
 #define SPLIT_SIZE 			MAX_BIT_VALUE
 
+
+#define WEIGHT_BIT_DEPTH    
+
 extern RK_U16      g_BaseThumbBuf[409600];                         // Thumb data pointers
 
 
