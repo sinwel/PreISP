@@ -11,7 +11,7 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 	int		i;
 	int		x, y;
 	RK_U16		*pcount[9], **pcount_mat;
-	unsigned long		*pweight[9], **pweight_mat;
+	RK_U32		*pweight[9], **pweight_mat;
 	RK_U16		sw, sh;
 	RK_U16		light;
 
@@ -38,9 +38,9 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 	for (i = 0; i < 9; i++)
 	{
 		pcount[i] = (RK_U16*)malloc(sw*sh*sizeof(RK_U16));
-		pweight[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
+		pweight[i] = (RK_U32*)malloc(sw*sh*sizeof(RK_U32));
 		memset(pcount[i], 0, sw*sh*sizeof(RK_U16));
-		memset(pweight[i], 0, sw*sh*sizeof(unsigned long));
+		memset(pweight[i], 0, sw*sh*sizeof(RK_U32));
 	}
 	pcount_mat = pcount;
 	pweight_mat = pweight;
@@ -277,15 +277,19 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			light >>= 2;
 			weight = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
 			light <<= 2;
-//			*pixel_out++ = weight/16;
 
+		#if 0//WDR_USE_CEVA_VECC	
+			plight16 = (ushort16 *)&plight[y*w + x];
+			light16  = *plight16; 
+			ushort16 vmaxValue = (ushort16)16*1023;
+			light16  = (ushort16)vcmpmov(lt, light16, vmaxValue);
+			lindex16 = (ushort16)vshiftr(light16, (unsigned char) 11);
 
-			// 0614-1604
-			//if (testParams_5 == 1)
-			//{
-			//	weight = light;
-			//}
-			//else
+			weight1 = (left[lindex]     * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex]     * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+			weight2 = (left[lindex + 1] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex + 1] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+			weight = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
+			
+		#endif
 			{
 				if (abs(weight-light*1.0)>512)
 				{
@@ -303,17 +307,13 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 				weight = 0;
 			lindex = weight >> 4;
 			weight = (scale_table[lindex] * (16 - (weight & 15)) + scale_table[lindex + 1] * (weight & 15) + 8) >> 4;
-			//fprintf(stderr,"weight  = %d \n ", weight );
-			// Gain = weight/128
+
 			*(pGainMat + y*w + x) = (RK_U32)weight; // for zlf-SpaceDenoise
-
-
-
 
 
 			//*pixel_out++ = clip10bit(((unsigned long)(*pixel_in++) - 64 * 4)*weight / 512 + 64);
 			if(*pixel_in>blacklevel*2)
-				*pixel_out++ = clip10bit(((unsigned long)(*pixel_in++) - blacklevel * 2)*weight / 1024 + blacklevel/4);
+				*pixel_out++ = clip10bit(((*pixel_in++) - blacklevel * 2)*weight / 1024 + blacklevel/4);
 			else
 			{
 				*pixel_out++ = blacklevel/4;

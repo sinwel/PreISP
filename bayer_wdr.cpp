@@ -657,7 +657,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 
 			//*pixel_out++ = clip10bit(((unsigned long)(*pixel_in++) - 64 * 4)*weight / 512 + 64);
 			if(*pixel_in>blacklevel*2)
-				*pixel_out++ = clip10bit(((unsigned long)(*pixel_in++) - blacklevel * 2)*weight / 1024 + blacklevel/4);
+				*pixel_out++ = clip10bit(((*pixel_in++) - blacklevel * 2)*weight / 1024 + blacklevel/4);
 			else
 			{
 				*pixel_out++ = blacklevel/4;
