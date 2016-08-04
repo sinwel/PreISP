@@ -25,16 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef char			s8;
-typedef unsigned char	u8;
-typedef short			s16;
-typedef unsigned short	u16;
-typedef long			s32;
-typedef unsigned long	u32;
 
-//void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h, int max_scale);
-//void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h, float max_scale, RK_F32 testParams_5);
-void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h, float max_scale, RK_U32* pGainMat, RK_F32 testParams_5); // 20160701
 //////////////////////////////////////////////////////////////////////////
 
 #define     DDR_MAX_MEM_SIZE        134217728       // DDR memory size: 128MB = 128*1024*1024 = 134217728 Byte

@@ -241,6 +241,8 @@ option(ENABLE_APP "Build standalone preIsp_xm4 application" ON)
 if(ENABLE_APP)
    
 	file(GLOB preIspFiles   main.cpp 
+							ceva_bayer_wdr.cpp
+							rk_wdr.h
 							rk_global.h 
 							rk_memory.cpp 
 							rk_memory.h 

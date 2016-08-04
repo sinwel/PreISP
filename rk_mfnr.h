@@ -19,6 +19,7 @@
 #include "rk_global.h"               // Global definition
 #include "rk_memory.h"               // Memory operation
 
+#include "rk_wdr.h"
 
 //////////////////////////////////////////////////////////////////////////
 ////-------- Macro Switch Setting
