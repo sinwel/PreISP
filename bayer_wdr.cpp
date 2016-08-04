@@ -112,12 +112,12 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	int		x, y;
 	RK_U16		*pcount[9], **pcount_mat;
 	unsigned long		*pweight[9], **pweight_mat;
-	unsigned short		sw, sh;
-	unsigned short		light;
+	RK_U16		sw, sh;
+	RK_U16		light;
 
-	unsigned short		*p1, *p2, *p3;
-	unsigned short		*plight;
-	unsigned short		scale_table[1025];
+	RK_U16		*p1, *p2, *p3;
+	RK_U16		*plight;
+	RK_U16		scale_table[1025];
 
 	int lindex; //
 	int blacklevel=256;
@@ -202,8 +202,8 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	}
 	pcount_mat = pcount;
 	pweight_mat = pweight;
-	plight = (unsigned short*)malloc(w*h*sizeof(unsigned short));
-	memset(plight, 0, w*h*sizeof(unsigned short));
+	plight = (RK_U16*)malloc(w*h*sizeof(RK_U16));
+	memset(plight, 0, w*h*sizeof(RK_U16));
 
   	p1 = g_BaseThumbBuf;
 	p2 = g_BaseThumbBuf + wThumb;
@@ -276,8 +276,8 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	}
 	pcount_mat = pcount;
 	pweight_mat = pweight;
-	plight = (unsigned short*)malloc(w*h*sizeof(unsigned short));
-	memset(plight, 0, w*h*sizeof(unsigned short);
+	plight = (RK_U16*)malloc(w*h*sizeof(RK_U16));
+	memset(plight, 0, w*h*sizeof(RK_U16));
 	
 	p1 = pixel_in;
 	p2 = pixel_in + w;
@@ -493,7 +493,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			for (x = 0; x < sw; x++)
 			{
 				if (pcount_mat[i][y*sw + x])
-					pweight_mat[i][y*sw + x] = 4*pweight_mat[i][y*sw + x] / (pcount_mat[i][y*sw + x]);
+					pweight_mat[i][y*sw + x] = (RK_S16)(4*pweight_mat[i][y*sw + x] / (pcount_mat[i][y*sw + x]));
 				else
 					pweight_mat[i][y*sw + x] = 0;
 
@@ -504,10 +504,10 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	}
 #endif
 
-	unsigned long  left[9], right[9];
-	unsigned long weight1;
-	unsigned long weight2;
-	unsigned long weight;
+	RK_S16  left[9], right[9];
+	RK_S16 weight1;
+	RK_S16 weight2;
+	RK_S16 weight;
 	for (y = 0; y < h; y++)
 	{
 		for (x = 0; x < w; x++)
@@ -537,8 +537,10 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 
 			weight1 = (left[lindex]     * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex]     * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 			weight2 = (left[lindex + 1] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex + 1] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
-			weight = (weight1*(2048 - (light & 2047)) + weight2*(light & 2047)) / 2048;
 
+			light >>= 2;
+			weight = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
+			light <<= 2;
 //			*pixel_out++ = weight/16;
 
 

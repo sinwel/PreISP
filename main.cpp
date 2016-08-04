@@ -46,7 +46,7 @@ RK_U16      g_BaseThumbBuf[THUMBSIZE];                         // Thumb data poi
 //#define     FILENAME_PREFIX         "D:/adb_tools/20160629_03_OPPODng/test01/test01"  // Raw data file name prefix
 //#define     FILENAME_PREFIX         "D:/adb_tools/20160630_01_OPPODng/test11/test11"  // Raw data file name prefix
 //#define     FILENAME_PREFIX         "D:/adb_tools/20160704_02_OPPODng/test23/test23"  // Raw data file name prefix
-#define     FILENAME_PREFIX         "../../data/test14"
+#define     FILENAME_PREFIX         "../../data/test317/test317"
 //*/
 
 
