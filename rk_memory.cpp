@@ -1064,7 +1064,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			{
 				for (i = 0; i < 9; i++)
 				{
-					left[i] = (pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT)] * (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1)) 
+					left[i] =  (pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT)]     * (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1)) 
 						+ pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 					
 					right[i] = (pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + 1] * (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1)) 
@@ -1080,7 +1080,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			}
 			lindex = light >> 11;
 
-			weight1 = (left[lindex] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+			weight1 = (left[lindex]     * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex]     * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 			weight2 = (left[lindex + 1] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex + 1] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 			weight = (weight1*(2048 - (light & 2047)) + weight2*(light & 2047)) / 2048;
 
@@ -1088,11 +1088,11 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 
 
 			// 0614-1604
-			if (testParams_5 == 1)
-			{
-				weight = light;
-			}
-			else
+			//if (testParams_5 == 1)
+			//{
+			//	weight = light;
+			//}
+			//else
 			{
 				if (abs(weight-light*1.0)>512)
 				{
