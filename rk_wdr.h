@@ -43,7 +43,7 @@ void cul_wdr_cure2(unsigned short *table, float exp_times);
 
 void cul_wdr_cure(unsigned short *table, unsigned short exp_times);
 
-
+int check_wdr_result(RK_U16* data1, RK_U16* data2,int Wid ,int  Hgt);
 
 //////////////////////////////////////////////////////////////////////////
 

@@ -7,6 +7,22 @@ unsigned short cure_table[24][961] =
 	#include "data/wdr_cure_tab.dat"
 };
 
+
+int check_wdr_result(RK_U16* data1, RK_U16* data2,int Wid ,int  Hgt)
+{
+	for ( int i = 0 ; i < Hgt ; i++ )
+	{
+	    for ( int j = 0 ; j < Wid ; j++ )
+	    {
+	        if(data1[i*Wid + j] != data2[i*Wid + j] )
+			{	
+				return -1;
+	        }
+	    }
+	}
+	return 0;
+}
+
 void cul_wdr_cure2(unsigned short *table, float exp_times)
 {
 	
@@ -649,76 +665,10 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 
 #if WDR_USE_THUMB_LUMA
 
-	#define SHIFT_BIT		 	8 // 4 , 5 , 6
-	#define SHIFT_BIT_SCALE 	(SHIFT_BIT - 3)
-	#define MAX_BIT_VALUE  		(1<<SHIFT_BIT) 
-	#define MAX_BIT_V_MINUS1 	((1<<SHIFT_BIT) - 1)
-	#define SPLIT_SIZE 			MAX_BIT_VALUE
-	
     int wThumb        = w  / SCALER_FACTOR_R2T;      // Thumb data width  (floor)
     int hThumb        = h  / SCALER_FACTOR_R2T;      // Thumb data height (floor)
 	int Thumb16Stride   = (wThumb*16 + 31) / 32 * 4; 
 
-  #if 0
-  	sw = w/SPLIT_SIZE;
-	sh = h/SPLIT_SIZE;
-	for (i = 0; i < 9; i++)
-	{
-		pcount[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
-		pweight[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
-		memset(pcount[i], 0, sw*sh*sizeof(unsigned long));
-		memset(pweight[i], 0, sw*sh*sizeof(unsigned long));
-	}
-	pcount_mat = pcount;
-	pweight_mat = pweight;
-	plight = (unsigned short*)malloc(w*h*sizeof(unsigned short));
-
-
-	unsigned short*   pTmp0 = g_BaseThumbBuf;
-	for (y = 0; y < sh ; y++)
-	{
-		for (x = 0; x < sw ; x++)
-		{
-			int idx, idy; 
-			int ScaleDownlight = 0;
-
-			for ( int ii = 0 ; ii < (1<<SHIFT_BIT_SCALE)  ; ii++ )
-				for ( int jj = 0 ; jj < (1<<SHIFT_BIT_SCALE)  ; jj++ )
-					ScaleDownlight += pTmp0[ii*wThumb + jj];
-
-			ScaleDownlight  >>= (2*SHIFT_BIT - 4 );
-			
-			lindex = ((RK_U32)ScaleDownlight + 1024) >> 11;
-
-			//idx = (x + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
-			//idy = (y + ((1<<SHIFT_BIT_SCALE)/2)) >> SHIFT_BIT_SCALE;
-			idx = x;
-			idy = y;
-			pcount_mat [lindex][idy*sw + idx] = pcount_mat [lindex][idy*sw + idx] + 1;
-			pweight_mat[lindex][idy*sw + idx] = pweight_mat[lindex][idy*sw + idx] + ScaleDownlight;
-
-		}
-		pTmp0 += wThumb;
-	}
-
-	/* SPLIT_SIZE*SPLIT_SIZE 的点设置为 平均值 */
-	for (y = 0; y < sh ; y++)
-	{
-		for (x = 0; x < sw ; x++)
-		{
-			unsigned long sumlight = 0;
-			unsigned short*   pTmp1 = pixel_in + (y*w + x)*SPLIT_SIZE ;
-			for ( int ii = 0 ; ii < SPLIT_SIZE ; ii++ )
-				for ( int jj = 0 ; jj < SPLIT_SIZE ; jj++ )
-					sumlight += pTmp1[ii*w + jj];
-			sumlight >>= 11; // 14 bit, linear gain is 8
-
-			for ( int ii = 0 ; ii < SPLIT_SIZE ; ii++ )
-				for ( int jj = 0 ; jj < SPLIT_SIZE; jj++ )
-					plight[(y*w + x)*SPLIT_SIZE + ii*w + jj] = sumlight;
-		}
-	}
-  #else
   	sw = (w + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	for (i = 0; i < 9; i++)
@@ -783,7 +733,6 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 		p3 += w;
 	}
 
-  #endif
 	
 #else
 	sw = (w + 127) >> 7;
@@ -851,18 +800,7 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 		p3 += w;
 	}
 
-/*
-	for (y = 0; y < sh; y++)
-	{
-		for (x = 1; x < sw; x++)
-		{
-			for (int line=0;line<9;line++){
-				fprintf(stderr,"count  = %d ",pcount_mat[line][y*sw + x] );
-				fprintf(stderr,"weight = %d \n",pweight_mat[line][y*sw + x]);
-			}
-		}
-	}
-	*/
+
 #endif
 
 	//filter
@@ -990,9 +928,6 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 		}
 	}
 
-
-
-
 	for (i = 0; i < 9; i++)
 	{
 		for (y = 0; y < sh; y++)
@@ -1015,6 +950,8 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 	unsigned long weight1;
 	unsigned long weight2;
 	unsigned long weight;
+
+	
 	for (y = 0; y < h; y++)
 	{
 		for (x = 0; x < w; x++)
