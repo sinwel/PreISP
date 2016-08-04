@@ -10,17 +10,17 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 {
 	int		i;
 	int		x, y;
-	RK_U32		*pcount[9], **pcount_mat; // 256x256 in scale8x8 is 1024 ,so 16bit is enough.
-	RK_U32		*pweight[9], **pweight_mat;//10bit + 4bit(gain) + 5 + 5, so need 24 bit.
-	RK_S16		sw, sh;
-	RK_S16		light;
+	RK_U16		*pcount[9], **pcount_mat;
+	unsigned long		*pweight[9], **pweight_mat;
+	RK_U16		sw, sh;
+	RK_U16		light;
 
 	ushort16* 			plight16;
 	ushort16 			light16;
 	ushort16 			lindex16;
 
 	RK_U16		*p1, *p2, *p3;
-	RK_U32		*plight;
+	RK_U16		*plight;
 	RK_U16		scale_table[1025];
 
 	int lindex; //
@@ -37,15 +37,15 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 	sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	for (i = 0; i < 9; i++)
 	{
-		pcount[i] = (RK_U32*)malloc(sw*sh*sizeof(RK_U32));
-		pweight[i] = (RK_U32*)malloc(sw*sh*sizeof(RK_U32));
-		memset(pcount[i], 0, sw*sh*sizeof(RK_U32));
-		memset(pweight[i], 0, sw*sh*sizeof(RK_U32));
+		pcount[i] = (RK_U16*)malloc(sw*sh*sizeof(RK_U16));
+		pweight[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
+		memset(pcount[i], 0, sw*sh*sizeof(RK_U16));
+		memset(pweight[i], 0, sw*sh*sizeof(unsigned long));
 	}
 	pcount_mat = pcount;
 	pweight_mat = pweight;
-	plight = (RK_U32*)malloc(w*h*sizeof(RK_U32));
-	memset(plight, 0, w*h*sizeof(RK_U32));
+	plight = (RK_U16*)malloc(w*h*sizeof(RK_U16));
+	memset(plight, 0, w*h*sizeof(RK_U16));
 
   	p1 = g_BaseThumbBuf;
 	p2 = g_BaseThumbBuf + wThumb;
@@ -231,24 +231,21 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			for (x = 0; x < sw; x++)
 			{
 				if (pcount_mat[i][y*sw + x])
-					//pweight_mat[i][y*sw + x] = ((double)64.0*(double)pweight_mat[i][y*sw + x]) / (double)pcount_mat[i][y*sw + x];
-					pweight_mat[i][y*sw + x] =  4 * pweight_mat[i][y*sw + x] /  pcount_mat[i][y*sw + x];
+					pweight_mat[i][y*sw + x] = (RK_S16)(4*pweight_mat[i][y*sw + x] / (pcount_mat[i][y*sw + x]));
 				else
 					pweight_mat[i][y*sw + x] = 0;
 
-				if (pweight_mat[i][y*sw + x]>16383) // 14bit
+				if (pweight_mat[i][y*sw + x]>16383)
 					pweight_mat[i][y*sw + x] = 16383;
 			}
 		}
 	}
 
 
-	RK_S32  left[9], right[9];
-	RK_U32 weight1;
-	RK_U32 weight2;
-	RK_U32 weight;
-
-	
+	RK_S16  left[9], right[9];
+	RK_S16 weight1;
+	RK_S16 weight2;
+	RK_S16 weight;
 	for (y = 0; y < h; y++)
 	{
 		for (x = 0; x < w; x++) // input/output 16 pixel result.
@@ -276,21 +273,10 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 
 			weight1 = (left[lindex]     * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex]     * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 			weight2 = (left[lindex + 1] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex + 1] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
-			weight  = (weight1*(2048 - (light & 2047)) + weight2*(light & 2047)) / 2048;
 
-
-		  #if 0//WDR_USE_CEVA_VECC	
-			plight16 = (ushort16 *)&plight[y*w + x];
-			light16  = *plight16; 
-			ushort16 vmaxValue = (ushort16)16*1023;
-			light16  = (ushort16)vcmpmov(lt, light16, vmaxValue);
-			lindex16 = (ushort16)vshiftr(light16, (unsigned char) 11);
-
-			weight1 = (left[lindex]     * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex]     * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
-			weight2 = (left[lindex + 1] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex + 1] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
-			weight  = (weight1*(2048 - (light & 2047)) + weight2*(light & 2047)) / 2048;
-
-		  #endif
+			light >>= 2;
+			weight = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
+			light <<= 2;
 //			*pixel_out++ = weight/16;
 
 
@@ -317,8 +303,10 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 				weight = 0;
 			lindex = weight >> 4;
 			weight = (scale_table[lindex] * (16 - (weight & 15)) + scale_table[lindex + 1] * (weight & 15) + 8) >> 4;
-
+			//fprintf(stderr,"weight  = %d \n ", weight );
+			// Gain = weight/128
 			*(pGainMat + y*w + x) = (RK_U32)weight; // for zlf-SpaceDenoise
+
 
 
 

@@ -111,7 +111,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	int		i;
 	int		x, y;
 	RK_U16		*pcount[9], **pcount_mat;
-	unsigned long		*pweight[9], **pweight_mat;
+	RK_U32		*pweight[9], **pweight_mat;
 	RK_U16		sw, sh;
 	RK_U16		light;
 
@@ -196,9 +196,9 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 	for (i = 0; i < 9; i++)
 	{
 		pcount[i] = (RK_U16*)malloc(sw*sh*sizeof(RK_U16));
-		pweight[i] = (unsigned long*)malloc(sw*sh*sizeof(unsigned long));
+		pweight[i] = (RK_U32*)malloc(sw*sh*sizeof(RK_U32));
 		memset(pcount[i], 0, sw*sh*sizeof(RK_U16));
-		memset(pweight[i], 0, sw*sh*sizeof(unsigned long));
+		memset(pweight[i], 0, sw*sh*sizeof(RK_U32));
 	}
 	pcount_mat = pcount;
 	pweight_mat = pweight;
