@@ -37,8 +37,10 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h, float max_scale, RK_U32* pGainMat, RK_F32 testParams_5); // 20160701
 
 
-inline unsigned short clip16bit(unsigned long x);
-inline unsigned short clip10bit(unsigned short x);
+//inline 
+unsigned short clip16bit(unsigned long x);
+//inline 
+unsigned short clip10bit(unsigned short x);
 void cul_wdr_cure2(unsigned short *table, float exp_times);
 
 void cul_wdr_cure(unsigned short *table, unsigned short exp_times);

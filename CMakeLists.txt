@@ -242,6 +242,7 @@ if(ENABLE_APP)
    
 	file(GLOB preIspFiles   main.cpp 
 							ceva_bayer_wdr.cpp
+							bayer_wdr.cpp
 							rk_wdr.h
 							rk_global.h 
 							rk_memory.cpp 

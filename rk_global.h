@@ -53,7 +53,7 @@
 
 #define     WDR_USE_2D_PLANAR_FILTER       0 
 #define     WDR_USE_THUMB_LUMA             1 
-
+#define     WDR_USE_CEVA_VECC              1 
 
 
 #endif // _RK_UTILS_H
