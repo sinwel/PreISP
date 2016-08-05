@@ -12,6 +12,7 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 	int		x, y;
 	RK_U16		*pcount[9], **pcount_mat;
 	RK_U32		*pweight[9], **pweight_mat;
+	RK_U16		*pweight_vcc[9],**pweight_mat_vecc;
 	RK_U16		sw, sh;
 	RK_U16		light;
 
@@ -49,13 +50,15 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 	sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	for (i = 0; i < 9; i++)
 	{
-		pcount[i] = (RK_U16*)malloc(sw*sh*sizeof(RK_U16));
-		pweight[i] = (RK_U32*)malloc(sw*sh*sizeof(RK_U32));
+		pcount[i] 			= (RK_U16*)malloc(sw*sh*sizeof(RK_U16));
+		pweight_vcc[i] 		= (RK_U16*)malloc(sw*sh*sizeof(RK_U16));
+		pweight[i] 			= (RK_U32*)malloc(sw*sh*sizeof(RK_U32));
 		memset(pcount[i], 0, sw*sh*sizeof(RK_U16));
 		memset(pweight[i], 0, sw*sh*sizeof(RK_U32));
 	}
-	pcount_mat = pcount;
-	pweight_mat = pweight;
+	pcount_mat 			= pcount;
+	pweight_mat 		= pweight;
+	pweight_mat_vecc 	= pweight_vcc;
 	plight = (RK_U16*)malloc(w*h*sizeof(RK_U16));
 	memset(plight, 0, w*h*sizeof(RK_U16));
 
@@ -243,36 +246,20 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			for (x = 0; x < sw; x++)
 			{
 				if (pcount_mat[i][y*sw + x])
-				{
-					#if WDR_USE_CEVA_VECC
-					// actully is 17x13 = 221
-					pweight_vecc[i][y*sw + x] = (RK_U16)(4*pweight_mat[i][y*sw + x] / (pcount_mat[i][y*sw + x])); 
-					#endif	
-					pweight_mat[i][y*sw + x] = (RK_U16)(4*pweight_mat[i][y*sw + x] / (pcount_mat[i][y*sw + x]));
-				}
+					pweight_mat_vecc[i][y*sw + x] = (RK_U16)(4*pweight_mat[i][y*sw + x] / pcount_mat[i][y*sw + x]);
 				else
-				{	
-					#if WDR_USE_CEVA_VECC
-					pweight_vecc[i][y*sw + x] = 0; 
-					#endif		
-					pweight_mat[i][y*sw + x] = 0;
-				}
-				if (pweight_mat[i][y*sw + x]>16383)
-				{
-					#if WDR_USE_CEVA_VECC
-					pweight_vecc[i][y*sw + x] = 16383; 
-					#endif
-					pweight_mat[i][y*sw + x] = 16383;
+					pweight_mat_vecc[i][y*sw + x] = 0;
 
-				}
+				if (pweight_mat[i][y*sw + x] > 16383)
+					pweight_mat_vecc[i][y*sw + x] = 16383;
 			}
 		}
 	}
 
-	RK_S16  left[9], right[9];
-	RK_S16 weight1;
-	RK_S16 weight2;
-	RK_S16 weight;
+	RK_U16  left[9], right[9];
+	RK_U16 weight1;
+	RK_U16 weight2;
+	RK_U16 weight;
 	for (y = 0; y < h; y++)
 	{
 		for (x = 0; x < w; x++) // input/output 16 pixel result.
@@ -282,12 +269,11 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			{
 				for (i = 0; i < 9; i++)
 				{
-					// (14BIT * 8 + 14BIT *8) / 8BIT
-					left[i] =  (pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT)]     * (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1)) 
-						+ pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+					left[i] =  (pweight_mat_vecc[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT)]     * (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1)) 
+						+ pweight_mat_vecc[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 					
-					right[i] = (pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + 1] * (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1)) 
-						+ pweight_mat[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw + 1] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+					right[i] = (pweight_mat_vecc[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + 1] * (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1)) 
+						+ pweight_mat_vecc[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw + 1] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 				}
 
 			}
@@ -306,15 +292,10 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			weight = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
 			light <<= 2;
 
-			{
-				if (abs(weight-light*1.0)>512)
-				{
-					if(light>weight)
-						weight = light-512;
-					else
-						weight = light+512;
-				}
-			}
+			if(light>weight)
+				weight = light-512;
+			else if (light<weight)
+				weight = light+512;
 
 
 			if(weight>blacklevel*4)
