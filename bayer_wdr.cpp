@@ -8,6 +8,17 @@ unsigned short cure_table[24][961] =
 	#include "data/wdr_cure_tab.dat"
 };
 
+int check_ushort16_vecc_result(RK_U16* data1, ushort16 data2, int  num)
+{
+	for ( int i = 0 ; i < num ; i++ )
+	{
+        if(data1[i] != data2[i] )
+		{	
+			return -1;
+        }
+	}
+	return 0;
+}
 
 
 int check_wdr_result(RK_U16* data1, RK_U16* data2,int Wid ,int  Hgt)

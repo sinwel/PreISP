@@ -14,7 +14,7 @@
 // 
 #include "rk_typedef.h"              // Type definition
 #include "rk_global.h"               // Global definition
-
+#include "vec-c.h"
 //////////////////////////////////////////////////////////////////////////
 // ln
 #include <string.h>
@@ -29,7 +29,29 @@
 #define SPLIT_SIZE 			MAX_BIT_VALUE
 
 
-#define WEIGHT_BIT_DEPTH    
+#define WDR_WEIGHT_STRIDE   256  
+
+
+
+#define PRINT_CEVA_VRF(namestr,vReg,fp,...) \
+    {\
+        if (fp) \
+        fprintf(fp,"[%s]: ",namestr);\
+        else \
+        fprintf(stderr,"[%s]: ",namestr); \
+        for (int elem = 0; elem < vReg.num_of_elements; elem++) \
+        { \
+            if (fp) \
+                fprintf(fp,"0x%04x ",vReg[elem]);\
+            else \
+                fprintf(stderr,"0x%04x ",vReg[elem]); \
+        } \
+        if (fp) \
+        fprintf(fp,"\n");\
+        else \
+        fprintf(stderr,"\n"); \
+    }
+
 
 extern RK_U16      g_BaseThumbBuf[409600];                         // Thumb data pointers
 
@@ -49,6 +71,9 @@ void cul_wdr_cure2(unsigned short *table, float exp_times);
 void cul_wdr_cure(unsigned short *table, unsigned short exp_times);
 
 int check_wdr_result(RK_U16* data1, RK_U16* data2,int Wid ,int  Hgt);
+int check_ushort16_vecc_result(RK_U16* data1, ushort16 data2, int  num);
+
+void interpolationYaxis();
 
 //////////////////////////////////////////////////////////////////////////
 

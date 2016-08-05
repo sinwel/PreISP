@@ -708,6 +708,9 @@ int MultiSetsTest()
 //
 int main(void)//(int argc, char* argv[])
 {
+#if WDR_USE_CEVA_VECC
+	interpolationYaxis();
+#endif
     //
     int     ret = 0; // return value
     char    fileNames[RK_MAX_FILE_NUM][256];    // file name
