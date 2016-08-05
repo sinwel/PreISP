@@ -306,18 +306,6 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			weight = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
 			light <<= 2;
 
-		#if 0//WDR_USE_CEVA_VECC	
-			plight16 = (ushort16 *)&plight[y*w + x];
-			light16  = *plight16; 
-			ushort16 vmaxValue = (ushort16)16*1023;
-			light16  = (ushort16)vcmpmov(lt, light16, vmaxValue);
-			lindex16 = (ushort16)vshiftr(light16, (unsigned char) 11);
-
-			weight1 = (left[lindex]     * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex]     * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
-			weight2 = (left[lindex + 1] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex + 1] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
-			weight = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
-			
-		#endif
 			{
 				if (abs(weight-light*1.0)>512)
 				{
@@ -358,10 +346,31 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 }
 
 
+
+
+static unsigned long rand_next = 1;
+
+void CCV_srand(unsigned long seed)
+{
+    rand_next = seed;
+}
+
+int CCV_rand()
+{
+    return ((rand_next = rand_next * (long)1103515245 + 12345l) & 0x7fffffff);
+}
+
+
+
 void interpolationYaxis()
 {
+	RK_U16		light[16];
+	RK_U16		pweight_vecc[9][256] = {0};// actully is 17x13 = 221
+	RK_S16 		weight1[16];
+	RK_S16 		weight2[16];
+	RK_S16 		weight[16];
+	RK_S16 		lindex[16];
 	
-	static RK_U16	pweight_vecc[9][256] = {0};// actully is 17x13 = 221
 	ushort16* 			plight16;
 	ushort16 			light16;
 	ushort16 			lindex16;
@@ -377,21 +386,29 @@ void interpolationYaxis()
 	int x, y, w = 4164, h=3136;
   	int sw = (w + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	int sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
-	int i,j,ret = 0;
+	int i,j,k,ret = 0;
 	//init pweight_vecc
 	for ( i = 0 ; i < 9 ; i++ )
 	    for ( j = 0 ; j < sw*sh ; j++ )
-			pweight_vecc[i][j] = i*1024+j;	
+			pweight_vecc[i][j] =  (RK_U16)(CCV_rand()&0xffff); //i*1024+j;	
+
+	RK_U16 *plight = (RK_U16*)malloc(w*h*sizeof(RK_U16));
+
+	//init plight
+	for ( i = 0 ; i < h; i++ )
+	    for ( j = 0 ; j < w; j++ )
+			plight[i*w+j] =  (RK_U16)(CCV_rand()&0x3fff); //i*1024+j;	
 	
 
 	
 	vacc0 = 0;
 	for (y = 1; y < h; y++)
 	{
-		for (x = 0; x < w; x+=MAX_BIT_VALUE) // input/output 16 pixel result.
+		for (x = 0; x < w; x+=16) // input/output 16 pixel result.
 		{
-			
-			//if ((x & MAX_BIT_V_MINUS1) == 0)// the first 2D block (x,y) do once.
+			// -------------------------------------------------------------- // 
+			/* x+256 for one loop */
+			if ((x & MAX_BIT_V_MINUS1) == 0)// the first 2D block (x,y) do once.
 			{
 				for (i = 0; i < 9; i++)
 				{
@@ -459,9 +476,46 @@ void interpolationYaxis()
 				}
 				assert(ret == 0);
 			}
+			// -------------------------------------------------------------- // 
+			
+			/* x+16 for one loop */
+			for  ( k = 0 ; k < 16 ; k++ )
+			{
+    			light[k] = plight[y*w + x + k];
+				if (light[k]>16*1023)
+				{
+					light[k]=16*1023;
+				}
+				lindex[k] = light[k] >> 11;
+
+				weight1[k] = (left[lindex[k]]     * (MAX_BIT_VALUE - ((x + k) & MAX_BIT_V_MINUS1)) 
+					    + right[lindex[k]]     * ((x + k) & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+				weight2[k] = (left[lindex[k] + 1] * (MAX_BIT_VALUE - ((x + k) & MAX_BIT_V_MINUS1)) 
+					    + right[lindex[k] + 1] * ((x + k) & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+
+				weight[k] = (weight1[k]*(512 - ((light[k] >> 2) & 511)) + weight2[k]*((light[k] >> 2) & 511)) / 512; 
+
+			}
+
+			light16  = *(ushort16*)&plight[y*w + x];
+			PRINT_CEVA_VRF("light16",light16,stderr);
+
+			light16  = (ushort16)vcmpmov(lt, light16, (ushort16)16*1023);
+			PRINT_CEVA_VRF("light16",light16,stderr);
+			lindex16 = (ushort16)vshiftr(light16, (unsigned char) 11);
+			PRINT_CEVA_VRF("lindex16",lindex16,stderr);
+			//weight1  = (left[lindex]     * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex]     * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+			//weight2  = (left[lindex + 1] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex + 1] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
+			//weight   = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
+			
+
+			// -------------------------------------------------------------- // 
+			
 		}
 	}
 
+	if(plight)
+		free(plight);
 }
 
 void interpolationXaxis()

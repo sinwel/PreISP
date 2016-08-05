@@ -708,7 +708,7 @@ int MultiSetsTest()
 //
 int main(void)//(int argc, char* argv[])
 {
-#if WDR_USE_CEVA_VECC
+#if 0//WDR_USE_CEVA_VECC
 	interpolationYaxis();
 #endif
     //

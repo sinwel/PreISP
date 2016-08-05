@@ -504,7 +504,7 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			for (x = 0; x < sw; x++)
 			{
 				if (pcount_mat[i][y*sw + x])
-					pweight_mat[i][y*sw + x] = (RK_S16)(4*pweight_mat[i][y*sw + x] / (pcount_mat[i][y*sw + x]));
+					pweight_mat[i][y*sw + x] = (RK_U16)(4*pweight_mat[i][y*sw + x] / (pcount_mat[i][y*sw + x]));
 				else
 					pweight_mat[i][y*sw + x] = 0;
 
