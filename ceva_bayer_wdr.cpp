@@ -461,7 +461,10 @@ void interpolationYaxis()
 	RK_U16 		*pGainMat_vecc 	= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
 	RK_U16 		*pixel_out 		= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
 	RK_U16 		*pixel_out_vecc = (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
-
+	RK_U16		*ptmp0 = pixel_in;
+	RK_U16		*ptmp1 = pixel_in_vecc;
+	RK_U16		*ptmp2 = pixel_out;
+	RK_U16		*ptmp3 = pixel_out_vecc;
 
 	//init pixel_in
 	for ( i = 0 ; i < h ; i++ )
@@ -651,12 +654,12 @@ void interpolationYaxis()
 
 				//*(pGainMat + y*w + x + k) = (RK_U32)weight[k]; // for zlf-SpaceDenoise
 
-				if(*pixel_in>blacklevel*2)
-					*pixel_out++ = clip10bit(((*pixel_in++) - blacklevel * 2)*weight[k] / 1024 + blacklevel/4);
+				if(*ptmp0>blacklevel*2)
+					*ptmp2++ = clip10bit(((*ptmp0++) - blacklevel * 2)*weight[k] / 1024 + blacklevel/4);
 				else
 				{
-					*pixel_out++ = blacklevel/4;
-					pixel_in++;
+					*ptmp2++ = blacklevel/4;
+					ptmp0++;
 				}
 				
 			}			
@@ -689,32 +692,27 @@ void interpolationYaxis()
 			}
 			
 			set_short16(inN , 0);
-			v1 = vpld(pixel_in_vecc,inN);
+			v1 = vpld(ptmp1,inN);
 			vpr0 = vcmp(gt,v1,const16_2);
 			v1 = (ushort16)vsub(v1,const16_2); // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
 			v1 = (ushort16)vmac(psl, v1, weight16, const16_4, (unsigned char)10);
 			v1 = vselect(v1, const16_3, vpr0); 
 			v1 = vclip(v1, (ushort16) 0, (ushort16) 1023);
-			vst(v1,(ushort16*)pixel_out_vecc,vprMask); // vprMask handle with unalign in image board.
-			ret += check_wdr_result(pixel_out - 16,  pixel_out_vecc, 16, 1);	
+			vst(v1,(ushort16*)ptmp3,vprMask); // vprMask handle with unalign in image board.
+			ret += check_wdr_result(ptmp2 - 16,  ptmp3, 16, 1);	
 			if (ret){
 				PRINT_CEVA_VRF("out",v1,stderr);
 			}			
-			pixel_in_vecc += 16;
-			pixel_out_vecc +=16;
+			ptmp1 += 16;
+			ptmp3 +=16;
 			
 		}
 	}
 
 
-	// checkout Gain and Output
-
-
-	
 
 	if(pixel_in)
-		free(pixel_in);
-	
+		free(pixel_in);	
 	if(plight)
 		free(plight);
 	if(pGainMat)
