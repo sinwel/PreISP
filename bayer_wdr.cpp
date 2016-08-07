@@ -552,9 +552,10 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			weight1 = (left[lindex]     * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex]     * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 			weight2 = (left[lindex + 1] * (MAX_BIT_VALUE - (x & MAX_BIT_V_MINUS1)) + right[lindex + 1] * (x & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 
-			light >>= 2;
-			weight = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
-			light <<= 2;
+			//light >>= 2;
+			//weight = (weight1*(512 - (light & 511)) + weight2*(light & 511)) / 512;
+			//light <<= 2;
+			weight = (weight1*(2048 - (light & 2047)) + weight2*(light & 2047)) / 2048;
 //			*pixel_out++ = weight/16;
 
 
