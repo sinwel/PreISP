@@ -383,44 +383,27 @@ void set_char32(uchar32 &data, int offset)
 	data = *(uchar32*)chargroup;
 }
 
-void set_char32_input16(uchar32 &data, int offset[])
+void set_short16(short16 &data, int offset)
 {
-	unsigned char chargroup[32];
-	chargroup[0] = (MAX_BIT_VALUE - ((offset[0]) & MAX_BIT_V_MINUS1));
-	chargroup[1] = (MAX_BIT_VALUE - ((offset[1]) & MAX_BIT_V_MINUS1));
-	chargroup[2] = (MAX_BIT_VALUE - ((offset[2]) & MAX_BIT_V_MINUS1));
-	chargroup[3] = (MAX_BIT_VALUE - ((offset[3]) & MAX_BIT_V_MINUS1));
-	chargroup[4] = (MAX_BIT_VALUE - ((offset[4]) & MAX_BIT_V_MINUS1));
-	chargroup[5] = (MAX_BIT_VALUE - ((offset[5]) & MAX_BIT_V_MINUS1));
-	chargroup[6] = (MAX_BIT_VALUE - ((offset[6]) & MAX_BIT_V_MINUS1));
-	chargroup[7] = (MAX_BIT_VALUE - ((offset[7]) & MAX_BIT_V_MINUS1));
-	chargroup[8] = (MAX_BIT_VALUE - ((offset[8]) & MAX_BIT_V_MINUS1));
-	chargroup[9] = (MAX_BIT_VALUE - ((offset[9]) & MAX_BIT_V_MINUS1));
-	chargroup[10] = (MAX_BIT_VALUE - ((offset[10]) & MAX_BIT_V_MINUS1));
-	chargroup[11] = (MAX_BIT_VALUE - ((offset[11]) & MAX_BIT_V_MINUS1));
-	chargroup[12] = (MAX_BIT_VALUE - ((offset[12]) & MAX_BIT_V_MINUS1));
-	chargroup[13] = (MAX_BIT_VALUE - ((offset[13]) & MAX_BIT_V_MINUS1));
-	chargroup[14] = (MAX_BIT_VALUE - ((offset[14]) & MAX_BIT_V_MINUS1));
-	chargroup[15] = (MAX_BIT_VALUE - ((offset[15]) & MAX_BIT_V_MINUS1));
+	unsigned short group[16];
+	group[0]  = offset+0   ;                                     
+	group[1]  = offset+1   ;                                     
+	group[2]  = offset+2   ;                                     
+	group[3]  = offset+3   ;                                     
+	group[4]  = offset+4   ;                                     
+	group[5]  = offset+5   ;                                     
+	group[6]  = offset+6   ;                                     
+	group[7]  = offset+7   ;                                     
+	group[8]  = offset+8   ;                                     
+	group[9]  = offset+9   ;                                     
+	group[10] = offset+10  ;                                    
+	group[11] = offset+11  ;                                    
+	group[12] = offset+12  ;                                    
+	group[13] = offset+13  ;                                    
+	group[14] = offset+14  ;                                    
+	group[15] = offset+15  ;                                    
 
-	chargroup[16] = (offset[0])  & MAX_BIT_V_MINUS1 ;
-	chargroup[17] = (offset[1])  & MAX_BIT_V_MINUS1 ;
-	chargroup[18] = (offset[2])  & MAX_BIT_V_MINUS1 ;
-	chargroup[19] = (offset[3])  & MAX_BIT_V_MINUS1 ;
-	chargroup[20] = (offset[4])  & MAX_BIT_V_MINUS1 ;
-	chargroup[21] = (offset[5])  & MAX_BIT_V_MINUS1 ;
-	chargroup[22] = (offset[6])  & MAX_BIT_V_MINUS1 ;
-	chargroup[23] = (offset[7])  & MAX_BIT_V_MINUS1 ;
-	chargroup[24] = (offset[8])  & MAX_BIT_V_MINUS1 ;
-	chargroup[25] = (offset[9])  & MAX_BIT_V_MINUS1 ;
-	chargroup[26] = (offset[10]) & MAX_BIT_V_MINUS1 ;
-	chargroup[27] = (offset[11]) & MAX_BIT_V_MINUS1 ;
-	chargroup[28] = (offset[12]) & MAX_BIT_V_MINUS1 ;
-	chargroup[29] = (offset[13]) & MAX_BIT_V_MINUS1 ;
-	chargroup[30] = (offset[14]) & MAX_BIT_V_MINUS1 ;
-	chargroup[31] = (offset[15]) & MAX_BIT_V_MINUS1 ;
-
-	data = *(uchar32*)chargroup;
+	data = *(short16*)group;
 }
 void interpolationYaxis()
 {
@@ -435,9 +418,9 @@ void interpolationYaxis()
 	memcpy(scale_table,&cure_table[8][0],961*sizeof(RK_U16));
 
 	
-	int 		blacklevel=256;
+	int 		blacklevel=256, tmp[16] ,predLarge;
 	ushort16* 			plight16;
-	ushort16 			light16,weight16,tmp16,const16_1;
+	ushort16 			light16,weight16,tmp16,const16_1,const16_2;
 	uchar32 	weightLow16;
 
 	unsigned char config_list[32] = {0,  2,  4,  6,  8,  10, 12, 14, 
@@ -449,8 +432,10 @@ void interpolationYaxis()
 	
 	short16 			lindex16,const16;
 	const16 	= (short16)512;
-	const16_1 	= (ushort16)(256*4);
-	
+	const16_1 	= (ushort16)(blacklevel*4);
+	const16_2 	= (ushort16)(blacklevel*2);
+	ushort16 const16_3 = (ushort16)(blacklevel/4);
+	uint16   const16_4 = (uint16)(blacklevel*256);
 	short16 inN	;
 	ushort16 v0,v1,v2,v3,v4,v5,v6,v7;
 	const unsigned short* inM;
@@ -458,16 +443,35 @@ void interpolationYaxis()
 	short offset;
 	unsigned short bi0,bi1;
 	short16 bi0_vecc,bi1_vecc;
-	unsigned short vpr0,vpr1,vpr2;
+	unsigned short vpr0,vpr1,vpr2,vprMask = 0xffff;
 	
 	uchar32	bifactor_xAxis;	
 	uint16 vacc0,vacc1,vacc2,vacc3;
 	int16  vaccX;
 	unsigned short left[9],right[9];
 	int x, y, w = 4164, h=3136;
+  	int wStride16 = ((w + 15)/16)*16 ;
   	int sw = (w + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	int sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	int i,j,k,ret = 0;
+
+	RK_U16 		*pixel_in 		= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
+	RK_U16 		*pixel_in_vecc	= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
+	RK_U16 		*pGainMat 		= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
+	RK_U16 		*pGainMat_vecc 	= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
+	RK_U16 		*pixel_out 		= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
+	RK_U16 		*pixel_out_vecc = (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
+
+
+	//init pixel_in
+	for ( i = 0 ; i < h ; i++ )
+	    for ( j = 0 ; j < wStride16 ; j++ )
+		{	
+			pixel_in[i*w+j] 		=  (RK_U16)(CCV_rand()&0x03ff); //i*1024+j;		
+			pixel_in_vecc[i*w+j] 	=  pixel_in[i*w+j]	;	
+		}
+
+
 	//init pweight_vecc
 	for ( i = 0 ; i < 9 ; i++ )
 	    for ( j = 0 ; j < sw*sh ; j++ )
@@ -485,7 +489,7 @@ void interpolationYaxis()
 	vacc0 = 0;
 	for (y = 1; y < h; y++)
 	{
-		for (x = 0; x < w; x+=16) // input/output 16 pixel result.
+		for (x = 0; x < wStride16; x+=16) // input/output 16 pixel result.
 		{
 			// -------------------------------------------------------------- // 
 			/* x+256 for one loop */
@@ -575,10 +579,6 @@ void interpolationYaxis()
 					    + right[lindex[k] + 1] * ((x + k) & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 
 				weight[k] = (weight1[k]*(2048 - (light[k] & 2047)) + weight2[k]*(light[k]  & 2047)) / 2048; 
-				// clip weight
-				
-	
-				
 
 			}
 
@@ -649,26 +649,25 @@ void interpolationYaxis()
 				weight[k] = ( scale_table[lindex[k]]     * (16 - (weight[k] & 15)) 
 							+ scale_table[lindex[k] + 1] * (weight[k] & 15) + 8  ) >> 4;
 
-				//*(pGainMat + y*w + x) = (RK_U32)weight; // for zlf-SpaceDenoise
+				//*(pGainMat + y*w + x + k) = (RK_U32)weight[k]; // for zlf-SpaceDenoise
 
-				/*
-				//*pixel_out++ = clip10bit(((unsigned long)(*pixel_in++) - 64 * 4)*weight / 512 + 64);
 				if(*pixel_in>blacklevel*2)
-					*pixel_out++ = clip10bit(((*pixel_in++) - blacklevel * 2)*weight / 1024 + blacklevel/4);
+					*pixel_out++ = clip10bit(((*pixel_in++) - blacklevel * 2)*weight[k] / 1024 + blacklevel/4);
 				else
 				{
 					*pixel_out++ = blacklevel/4;
 					pixel_in++;
 				}
-				*/
+				
 			}			
 			tmp16 = vabssub(light16,weight16);
 			// -------------------------------------------------------------- // 
 			
-			vpr0 = vabscmp(ge, (short16)tmp16, const16);// weight need be clip by light
+			vpr0 = vabscmp(gt, (short16)tmp16, const16);// weight need be clip by light
 			vpr1 = vcmp(gt,weight16,light16)&vpr0;// weight > light
-
-			weight16 = (ushort16)vselect(vadd((short16)light16,const16), vsub((short16)light16,const16), vpr1); // weight = light+512 or // weight = light+512
+			vpr2 = vcmp(le,weight16,light16)&vpr0;// weight > light
+			weight16 = (ushort16)vselect(vadd((short16)light16,const16), weight16, vpr1); // weight = light+512 or // weight = light+512
+			weight16 = (ushort16)vselect(vsub((short16)light16,const16), weight16, vpr2); // weight = light+512 or // weight = light+512
 
 			vpr0 = vcmp(gt,weight16,const16_1);
 			weight16 = (ushort16)vselect(vsub(weight16,const16_1), (short16)0, vpr0); // weight = light+512 or // weight = light+512
@@ -681,18 +680,51 @@ void interpolationYaxis()
 			weightLow16 = (uchar32)vperm(weightLow16,vsub((uchar32)16,weightLow16),vconfig0);
 
 			vacc0 = (uint16)8;	
-			//set_char32_input16(bifactor_xAxis,x);			
 			weight16 = vmac3(splitsrc, psl, v4, v1, weightLow16, vacc0, (unsigned char)4);
 
 			ret += check_ushort16_vecc_result(weight,  weight16, 16);
 			if (ret){
+				PRINT_C_GROUP("weight",weight,16,stderr);
 				PRINT_CEVA_VRF("weight16",weight16,stderr);
 			}
+			
+			set_short16(inN , 0);
+			v1 = vpld(pixel_in_vecc,inN);
+			vpr0 = vcmp(gt,v1,const16_2);
+			v1 = (ushort16)vsub(v1,const16_2); // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
+			v1 = (ushort16)vmac(psl, v1, weight16, const16_4, (unsigned char)10);
+			v1 = vselect(v1, const16_3, vpr0); 
+			v1 = vclip(v1, (ushort16) 0, (ushort16) 1023);
+			vst(v1,(ushort16*)pixel_out_vecc,vprMask); // vprMask handle with unalign in image board.
+			ret += check_wdr_result(pixel_out - 16,  pixel_out_vecc, 16, 1);	
+			if (ret){
+				PRINT_CEVA_VRF("out",v1,stderr);
+			}			
+			pixel_in_vecc += 16;
+			pixel_out_vecc +=16;
+			
 		}
 	}
 
+
+	// checkout Gain and Output
+
+
+	
+
+	if(pixel_in)
+		free(pixel_in);
+	
 	if(plight)
 		free(plight);
+	if(pGainMat)
+		free(pGainMat);
+	if(pGainMat_vecc)
+		free(pGainMat_vecc);
+	if(pixel_out)
+		free(pixel_out);
+	if(pixel_out_vecc)
+		free(pixel_out_vecc);
 }
 
 void interpolationXaxis()
