@@ -437,7 +437,7 @@ void interpolationYaxis()
 	ushort16 const16_3 = (ushort16)(blacklevel/4);
 	uint16   const16_4 = (uint16)(blacklevel*256);
 	short16 inN	;
-	ushort16 v0,v1,v2,v3,v4,v5,v6,v7;
+	ushort16 v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11;
 	const unsigned short* inM;
 	short chunkStrideBytes = 256, ptrChunks[16] = {0};
 	short offset;
@@ -588,12 +588,16 @@ void interpolationYaxis()
 			light16  = *(ushort16*)&plight[y*w + x];
 			light16  = (ushort16)vcmpmov(lt, light16, (ushort16)16*1023);
 			lindex16 = vshiftr(light16, (unsigned char) 11);
-
+		#if 0
 			inM = left;		
 			vpld(inM, lindex16, v1, v4);// v1 is left[lindex[k]], v4 is left[lindex[k]+1]
 			inM = right;		
 			vpld(inM, lindex16, v3, v5);// v3 is right[lindex[k]], v5 is right[lindex[k]+1]
-
+		#else
+			// get left(v0) and right(v2) from VRF register by vperm.
+			vpld((unsigned short*)&v0[0], lindex16, v1, v4);
+			vpld((unsigned short*)&v2[0], lindex16, v3, v5);
+		#endif
 			set_char32(bifactor_xAxis,x);		
 			vacc0 = (uint16) 0;
 			v6 = vmac3(splitsrc, psl, v1, v3, bifactor_xAxis, vacc0, (unsigned char)SHIFT_BIT);
