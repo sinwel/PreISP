@@ -566,11 +566,11 @@ void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h
 			//}
 			//else
 			{
-				//if (abs(weight-light*1.0)>512)
+				if (abs(weight-light)>512)
 				{
 					if(light>weight)
 						weight = light-512;
-					else if (light<weight)
+					else
 						weight = light+512;
 				}
 			}

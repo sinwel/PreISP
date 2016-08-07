@@ -31,7 +31,24 @@
 
 #define WDR_WEIGHT_STRIDE   256  
 
-
+#define PRINT_C_GROUP(namestr,var,num,fp,...) \
+    {\
+        if (fp) \
+        fprintf(fp,"[%s]: ",namestr);\
+        else \
+        fprintf(stderr,"[%s]: ",namestr); \
+        for (int elem = 0; elem < num; elem++) \
+        { \
+            if (fp) \
+                fprintf(fp,"0x%04x ",var[elem]);\
+            else \
+                fprintf(stderr,"0x%04x ",var[elem]); \
+        } \
+        if (fp) \
+        fprintf(fp,"\n");\
+        else \
+        fprintf(stderr,"\n"); \
+    }
 
 #define PRINT_CEVA_VRF(namestr,vReg,fp,...) \
     {\

@@ -293,11 +293,13 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			//light <<= 2;
 			weight = (weight1*(2048 - (light & 2047)) + weight2*(light & 2047)) / 2048;
 			
-			if(light>weight)
-				weight = light-512;
-			else if (light<weight)
-				weight = light+512;
-
+			if (abs(weight-light)>512)
+			{
+				if(light>weight)
+					weight = light-512;
+				else
+					weight = light+512;
+			}
 
 			if(weight>blacklevel*4)
 				weight = weight-blacklevel*4;
@@ -381,7 +383,45 @@ void set_char32(uchar32 &data, int offset)
 	data = *(uchar32*)chargroup;
 }
 
+void set_char32_input16(uchar32 &data, int offset[])
+{
+	unsigned char chargroup[32];
+	chargroup[0] = (MAX_BIT_VALUE - ((offset[0]) & MAX_BIT_V_MINUS1));
+	chargroup[1] = (MAX_BIT_VALUE - ((offset[1]) & MAX_BIT_V_MINUS1));
+	chargroup[2] = (MAX_BIT_VALUE - ((offset[2]) & MAX_BIT_V_MINUS1));
+	chargroup[3] = (MAX_BIT_VALUE - ((offset[3]) & MAX_BIT_V_MINUS1));
+	chargroup[4] = (MAX_BIT_VALUE - ((offset[4]) & MAX_BIT_V_MINUS1));
+	chargroup[5] = (MAX_BIT_VALUE - ((offset[5]) & MAX_BIT_V_MINUS1));
+	chargroup[6] = (MAX_BIT_VALUE - ((offset[6]) & MAX_BIT_V_MINUS1));
+	chargroup[7] = (MAX_BIT_VALUE - ((offset[7]) & MAX_BIT_V_MINUS1));
+	chargroup[8] = (MAX_BIT_VALUE - ((offset[8]) & MAX_BIT_V_MINUS1));
+	chargroup[9] = (MAX_BIT_VALUE - ((offset[9]) & MAX_BIT_V_MINUS1));
+	chargroup[10] = (MAX_BIT_VALUE - ((offset[10]) & MAX_BIT_V_MINUS1));
+	chargroup[11] = (MAX_BIT_VALUE - ((offset[11]) & MAX_BIT_V_MINUS1));
+	chargroup[12] = (MAX_BIT_VALUE - ((offset[12]) & MAX_BIT_V_MINUS1));
+	chargroup[13] = (MAX_BIT_VALUE - ((offset[13]) & MAX_BIT_V_MINUS1));
+	chargroup[14] = (MAX_BIT_VALUE - ((offset[14]) & MAX_BIT_V_MINUS1));
+	chargroup[15] = (MAX_BIT_VALUE - ((offset[15]) & MAX_BIT_V_MINUS1));
 
+	chargroup[16] = (offset[0])  & MAX_BIT_V_MINUS1 ;
+	chargroup[17] = (offset[1])  & MAX_BIT_V_MINUS1 ;
+	chargroup[18] = (offset[2])  & MAX_BIT_V_MINUS1 ;
+	chargroup[19] = (offset[3])  & MAX_BIT_V_MINUS1 ;
+	chargroup[20] = (offset[4])  & MAX_BIT_V_MINUS1 ;
+	chargroup[21] = (offset[5])  & MAX_BIT_V_MINUS1 ;
+	chargroup[22] = (offset[6])  & MAX_BIT_V_MINUS1 ;
+	chargroup[23] = (offset[7])  & MAX_BIT_V_MINUS1 ;
+	chargroup[24] = (offset[8])  & MAX_BIT_V_MINUS1 ;
+	chargroup[25] = (offset[9])  & MAX_BIT_V_MINUS1 ;
+	chargroup[26] = (offset[10]) & MAX_BIT_V_MINUS1 ;
+	chargroup[27] = (offset[11]) & MAX_BIT_V_MINUS1 ;
+	chargroup[28] = (offset[12]) & MAX_BIT_V_MINUS1 ;
+	chargroup[29] = (offset[13]) & MAX_BIT_V_MINUS1 ;
+	chargroup[30] = (offset[14]) & MAX_BIT_V_MINUS1 ;
+	chargroup[31] = (offset[15]) & MAX_BIT_V_MINUS1 ;
+
+	data = *(uchar32*)chargroup;
+}
 void interpolationYaxis()
 {
 	RK_U16		light[16];
@@ -390,10 +430,27 @@ void interpolationYaxis()
 	RK_U16 		weight2[16];
 	RK_U16 		weight[16];
 	RK_U16 		lindex[16];
+	RK_U16		scale_table[1025];
+
+	memcpy(scale_table,&cure_table[8][0],961*sizeof(RK_U16));
+
 	
+	int 		blacklevel=256;
 	ushort16* 			plight16;
-	short16 			light16;
-	short16 			lindex16;
+	ushort16 			light16,weight16,tmp16,const16_1;
+	uchar32 	weightLow16;
+
+	unsigned char config_list[32] = {0,  2,  4,  6,  8,  10, 12, 14, 
+									 16, 18, 20, 22, 24, 26, 28, 30,
+									 32, 34, 36, 38, 40, 42, 44, 46, 
+									 48, 50, 52, 54, 56, 58, 60, 62 };
+	uchar32 vconfig0 = *(uchar32*)(&config_list[0]);
+
+	
+	short16 			lindex16,const16;
+	const16 	= (short16)512;
+	const16_1 	= (ushort16)(256*4);
+	
 	short16 inN	;
 	ushort16 v0,v1,v2,v3,v4,v5,v6,v7;
 	const unsigned short* inM;
@@ -401,6 +458,8 @@ void interpolationYaxis()
 	short offset;
 	unsigned short bi0,bi1;
 	short16 bi0_vecc,bi1_vecc;
+	unsigned short vpr0,vpr1,vpr2;
+	
 	uchar32	bifactor_xAxis;	
 	uint16 vacc0,vacc1,vacc2,vacc3;
 	int16  vaccX;
@@ -419,7 +478,7 @@ void interpolationYaxis()
 	//init plight
 	for ( i = 0 ; i < h; i++ )
 	    for ( j = 0 ; j < w; j++ )
-			plight[i*w+j] =  (RK_U16)(CCV_rand()&0x3fff); //i*1024+j;	
+			plight[i*w+j] =  (RK_U16)(CCV_rand()&0x03ff); //i*1024+j;	
 	
 
 	
@@ -484,7 +543,7 @@ void interpolationYaxis()
 				{
 					bi0 = (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1));
 					bi1 = (y & MAX_BIT_V_MINUS1);
-
+					vacc0 = (uint16) 0;
 					v0 = vmac3(psl, v0, bi0, v1, bi1, vacc0, (unsigned char)SHIFT_BIT);
 					v2 = vmac3(psl, v2, bi0, v3, bi1, vacc0, (unsigned char)SHIFT_BIT);
 
@@ -508,7 +567,7 @@ void interpolationYaxis()
 				{
 					light[k]=16*1023;
 				}
-				lindex[k] = light[k] >> 11;
+				lindex[k]  = light[k] >> 11;
 
 				weight1[k] = (left[lindex[k]]     * (MAX_BIT_VALUE - ((x + k) & MAX_BIT_V_MINUS1)) 
 					    + right[lindex[k]]     * ((x + k) & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
@@ -516,26 +575,24 @@ void interpolationYaxis()
 					    + right[lindex[k] + 1] * ((x + k) & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 
 				weight[k] = (weight1[k]*(2048 - (light[k] & 2047)) + weight2[k]*(light[k]  & 2047)) / 2048; 
-
-
+				// clip weight
+				
+	
+				
 
 			}
 
-			light16  = *(short16*)&plight[y*w + x];
-			PRINT_CEVA_VRF("light16",light16,stderr);
-
-			light16  = vcmpmov(lt, light16, (short16)16*1023);
-			PRINT_CEVA_VRF("light16",light16,stderr);
+			light16  = *(ushort16*)&plight[y*w + x];
+			light16  = (ushort16)vcmpmov(lt, light16, (ushort16)16*1023);
 			lindex16 = vshiftr(light16, (unsigned char) 11);
-			PRINT_CEVA_VRF("lindex16",lindex16,stderr);
-
 
 			inM = left;		
 			vpld(inM, lindex16, v1, v4);// v1 is left[lindex[k]], v4 is left[lindex[k]+1]
 			inM = right;		
 			vpld(inM, lindex16, v3, v5);// v3 is right[lindex[k]], v5 is right[lindex[k]+1]
 
-			set_char32(bifactor_xAxis,x);			
+			set_char32(bifactor_xAxis,x);		
+			vacc0 = (uint16) 0;
 			v6 = vmac3(splitsrc, psl, v1, v3, bifactor_xAxis, vacc0, (unsigned char)SHIFT_BIT);
 			v7 = vmac3(splitsrc, psl, v4, v5, bifactor_xAxis, vacc0, (unsigned char)SHIFT_BIT);
 
@@ -549,8 +606,11 @@ void interpolationYaxis()
 			ret += check_ushort16_vecc_result(weight1,  v6, 16);
 			ret += check_ushort16_vecc_result(weight2,  v7, 16);
 			if (ret){
-				PRINT_CEVA_VRF("v0",v0,stderr);
-				PRINT_CEVA_VRF("v2",v2,stderr);
+				PRINT_C_GROUP("w1",weight1,16,stderr);
+				PRINT_CEVA_VRF("v6",v6,stderr);
+				
+				PRINT_C_GROUP("w2",weight2,16,stderr);
+				PRINT_CEVA_VRF("v7",v7,stderr);
 			}
 			assert(ret == 0);
 			
@@ -559,16 +619,75 @@ void interpolationYaxis()
 
 			vaccX = vmpy(v6, bi0_vecc);
 			
-			v7 = (ushort16)vmac(psl, v7, bi1_vecc, vaccX, (unsigned char)11);
-			ret += check_ushort16_vecc_result(weight,  v7, 16);
+			weight16 =  (ushort16)vmac(psl, v7, bi1_vecc, vaccX, (unsigned char)11);
+			ret += check_ushort16_vecc_result(weight,  weight16, 16);
 			if (ret){
-				PRINT_CEVA_VRF("v7",v7,stderr);
+				PRINT_CEVA_VRF("weight16",weight16,stderr);
 			}
 			assert(ret == 0);
-			
 
+			/* x+16 for one loop */
+			for  ( k = 0 ; k < 16 ; k++ )
+			{
+				if (abs(weight[k]-light[k])>512)
+				{
+					if(light[k]>weight[k])
+						weight[k] = light[k]-512;
+					else
+						weight[k] = light[k]+512;
+				}
+				
+				
+				if(weight[k]>blacklevel*4)
+					weight[k] = weight[k]-blacklevel*4;
+				else
+					weight[k] = 0;
+
+				
+				lindex[k] = weight[k] >> 4;
+				// use lindex and weight to get final weight 
+				weight[k] = ( scale_table[lindex[k]]     * (16 - (weight[k] & 15)) 
+							+ scale_table[lindex[k] + 1] * (weight[k] & 15) + 8  ) >> 4;
+
+				//*(pGainMat + y*w + x) = (RK_U32)weight; // for zlf-SpaceDenoise
+
+				/*
+				//*pixel_out++ = clip10bit(((unsigned long)(*pixel_in++) - 64 * 4)*weight / 512 + 64);
+				if(*pixel_in>blacklevel*2)
+					*pixel_out++ = clip10bit(((*pixel_in++) - blacklevel * 2)*weight / 1024 + blacklevel/4);
+				else
+				{
+					*pixel_out++ = blacklevel/4;
+					pixel_in++;
+				}
+				*/
+			}			
+			tmp16 = vabssub(light16,weight16);
 			// -------------------------------------------------------------- // 
 			
+			vpr0 = vabscmp(ge, (short16)tmp16, const16);// weight need be clip by light
+			vpr1 = vcmp(gt,weight16,light16)&vpr0;// weight > light
+
+			weight16 = (ushort16)vselect(vadd((short16)light16,const16), vsub((short16)light16,const16), vpr1); // weight = light+512 or // weight = light+512
+
+			vpr0 = vcmp(gt,weight16,const16_1);
+			weight16 = (ushort16)vselect(vsub(weight16,const16_1), (short16)0, vpr0); // weight = light+512 or // weight = light+512
+			lindex16 = vshiftr(weight16,  (unsigned char)4);
+
+			inM = scale_table;		
+			vpld(inM, lindex16, v1, v4);// v1 is scale_table[lindex[k]], v4 is scale_table[lindex[k]+1]
+
+			weightLow16 = (uchar32)vand(weight16,(unsigned short )15); 
+			weightLow16 = (uchar32)vperm(weightLow16,vsub((uchar32)16,weightLow16),vconfig0);
+
+			vacc0 = (uint16)8;	
+			//set_char32_input16(bifactor_xAxis,x);			
+			weight16 = vmac3(splitsrc, psl, v4, v1, weightLow16, vacc0, (unsigned char)4);
+
+			ret += check_ushort16_vecc_result(weight,  weight16, 16);
+			if (ret){
+				PRINT_CEVA_VRF("weight16",weight16,stderr);
+			}
 		}
 	}
 
