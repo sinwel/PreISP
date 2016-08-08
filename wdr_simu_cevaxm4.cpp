@@ -22,8 +22,10 @@
 #include "rk_wdr.h"
 #include <assert.h>
 #include <vec-c.h>
+#ifdef __XM4__
 #include "profiler.h"
-
+#include "XM4_defines.h"
+#endif
 extern unsigned short cure_table[24][961];
 
 static unsigned long rand_next = 1;
@@ -69,23 +71,35 @@ void wdr_simu_cevaxm4()
 	const16_2 	= (ushort16)(blacklevel*2);
 	ushort16 const16_3 = (ushort16)(blacklevel/4);
 	uint16   const16_4 = (uint16)(blacklevel*256);
-	short16 inN	;
+	short16 inN0,inN1	;
 	ushort16 v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11;
 	const unsigned short* inM;
-	short chunkStrideBytes = 256, ptrChunks[16] = {0};
+	short chunkStrideBytes = 256, ptrChunks[16];
+	ptrChunks[0] = chunkStrideBytes * 0;
+	ptrChunks[1] = chunkStrideBytes * 1;
+	ptrChunks[2] = chunkStrideBytes * 2;
+	ptrChunks[3] = chunkStrideBytes * 3;
+	ptrChunks[4] = chunkStrideBytes * 4;
+	ptrChunks[5] = chunkStrideBytes * 5;
+	ptrChunks[6] = chunkStrideBytes * 6;
+	ptrChunks[7] = chunkStrideBytes * 7;
+	ptrChunks[8] = chunkStrideBytes * 8;
+	short16 ptrChan = *(short16*)ptrChunks;
+	
 	short offset;
 	unsigned short bi0,bi1;
 	short16 bi0_vecc,bi1_vecc;
 	unsigned short vpr0,vpr1,vpr2,vprMask = 0xffff;
-	
-	uchar32	bifactor_xAxis;	
+	uchar32	biBase,bifactor_xAxis;	
+	set_char32(biBase,0);		
+
 	uint16 vacc0,vacc1,vacc2,vacc3;
 	int16  vaccX;
 	unsigned short left[9],right[9];
 	unsigned short left_vecc[9],right_vecc[9];
 	
 	//int x, y, w = 4164, h=3136;
-	int x, y, w = 128, h=32;
+	int x, y, w = 256, h=64;
   	int wStride16 = ((w + 15)/16)*16 ;
   	int sw = (w + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	int sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
@@ -102,7 +116,10 @@ void wdr_simu_cevaxm4()
 	RK_U16		*ptmp2 = pixel_out;
 	RK_U16		*ptmp3 = pixel_out_vecc;
 	RK_U16		*ptmp5 = pGainMat_vecc;
+	RK_U16 		*plight = (RK_U16*)malloc(w*h*sizeof(RK_U16));
+
 	
+/*	
 	// copy input with stride.
 	for ( i = 0 ; i < h ; i++ )
 	    for ( j = 0 ; j < wStride16 ; j++ )
@@ -117,19 +134,20 @@ void wdr_simu_cevaxm4()
 	    for ( j = 0 ; j < sw*sh ; j++ )
 			pweight_vecc[i][j] =  (RK_U16)(CCV_rand()&0xffff); //i*1024+j;	
 
-	RK_U16 *plight = (RK_U16*)malloc(w*h*sizeof(RK_U16));
 
 	//init plight
 	for ( i = 0 ; i < h; i++ )
 	    for ( j = 0 ; j < w; j++ )
 			plight[i*w+j] =  (RK_U16)(CCV_rand()&0x03ff); //i*1024+j;	
-	
+*/	
 
-	
+#ifdef __XM4__
 	PROFILER_START(h, w);
+#endif
 	for (y = 0; y < h; y++)
 	{
 		for (x = 0; x < wStride16; x+=16) // input/output 16 pixel result.
+		DSP_CEVA_UNROLL(8)
 		{
 			// -------------------------------------------------------------- // 
 			/* x+256 for one loop */
@@ -146,37 +164,12 @@ void wdr_simu_cevaxm4()
 						+ pweight_vecc[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw + 1] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 				}
 			#endif
-				inM 		 = pweight_vecc[0];				
-				offset 		 = (y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT);
-				ptrChunks[0] = chunkStrideBytes * 0 + offset;
-				ptrChunks[1] = chunkStrideBytes * 1 + offset;
-				ptrChunks[2] = chunkStrideBytes * 2 + offset;
-				ptrChunks[3] = chunkStrideBytes * 3 + offset;
-				ptrChunks[4] = chunkStrideBytes * 4 + offset;
-				ptrChunks[5] = chunkStrideBytes * 5 + offset;
-				ptrChunks[6] = chunkStrideBytes * 6 + offset;
-				ptrChunks[7] = chunkStrideBytes * 7 + offset;
-				ptrChunks[8] = chunkStrideBytes * 8 + offset;
-				inN 		 = *(short16*)ptrChunks;
+				offset 		 = (y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT);				
+				inN0 		 = vadd(ptrChan,(short16)offset);
+				inN1 		 = vadd(inN0,	(short16)sw);				
+				vpld((unsigned short*)pweight_vecc[0], inN0, v0, v2);
+				vpld((unsigned short*)pweight_vecc[0], inN1, v1, v3);
 
-				vpld(inM, inN, v0, v2);
-				//PRINT_CEVA_VRF("v0",v0,stderr);
-				//PRINT_CEVA_VRF("v2",v2,stderr);
-
-				offset += sw;
-				ptrChunks[0] = chunkStrideBytes * 0 + offset;
-				ptrChunks[1] = chunkStrideBytes * 1 + offset;
-				ptrChunks[2] = chunkStrideBytes * 2 + offset;
-				ptrChunks[3] = chunkStrideBytes * 3 + offset;
-				ptrChunks[4] = chunkStrideBytes * 4 + offset;
-				ptrChunks[5] = chunkStrideBytes * 5 + offset;
-				ptrChunks[6] = chunkStrideBytes * 6 + offset;
-				ptrChunks[7] = chunkStrideBytes * 7 + offset;
-				ptrChunks[8] = chunkStrideBytes * 8 + offset;
-				inN 		 = *(short16*)ptrChunks;
-				vpld(inM, inN, v1, v3);
-				//PRINT_CEVA_VRF("v1",v1,stderr);
-				//PRINT_CEVA_VRF("v3",v3,stderr);
 
 				/* DO interpolation, left by v0/v1, right by v2/v3, when y is zero, do copy v0/v2 only rather than vmac3 */
 				if ((y & MAX_BIT_V_MINUS1)==0)
@@ -185,13 +178,11 @@ void wdr_simu_cevaxm4()
 					v2 = v2;
 				}
 				else 
-				{
-					bi0 	= (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1));
+				{					
 					bi1 	= (y & MAX_BIT_V_MINUS1);
-					vacc0 	= (uint16) 0;
-					v0 		= vmac3(psl, v0, bi0, v1, bi1, vacc0, (unsigned char)SHIFT_BIT);
-					v2 		= vmac3(psl, v2, bi0, v3, bi1, vacc0, (unsigned char)SHIFT_BIT);
-
+					bi0 	= (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1));
+					v0 		= vmac3(psl, v0, bi0, v1, bi1, (uint16) 0, (unsigned char)SHIFT_BIT);
+					v2 		= vmac3(psl, v2, bi0, v3, bi1, (uint16) 0, (unsigned char)SHIFT_BIT);
 				}
 				vst(v0,(ushort16*)left_vecc,0x1ff); // store 9 points.
  				vst(v2,(ushort16*)right_vecc,0x1ff); // store 9 points.
@@ -230,19 +221,16 @@ void wdr_simu_cevaxm4()
 			light16  	= (ushort16)vcmpmov(lt, light16, (ushort16)16*1023);
 			lindex16 	= vshiftr(light16, (unsigned char) 11);
 
-			// get left(v0) and right(v2) from VRF register by vperm.
-			//vpld((unsigned short*)&v0[0], lindex16, v1, v4);
-			//vpld((unsigned short*)&v2[0], lindex16, v3, v5);
-			vpld((unsigned short*)left_vecc, lindex16, v1, v4);
+			vpld((unsigned short*)left_vecc,  lindex16, v1, v4);
 			vpld((unsigned short*)right_vecc, lindex16, v3, v5);
 
-			set_char32(bifactor_xAxis,x);		
-			vacc0 		= (uint16) 0;
-			v6 			= vmac3(splitsrc, psl, v1, v3, bifactor_xAxis, vacc0, (unsigned char)SHIFT_BIT);
-			v7 			= vmac3(splitsrc, psl, v4, v5, bifactor_xAxis, vacc0, (unsigned char)SHIFT_BIT);
+			bifactor_xAxis = (uchar32)vselect(vsub(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 
+									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
+
+			v6 			= vmac3(splitsrc, psl, v1, v3, bifactor_xAxis, (uint16) 0, (unsigned char)SHIFT_BIT);
+			v7 			= vmac3(splitsrc, psl, v4, v5, bifactor_xAxis, (uint16) 0, (unsigned char)SHIFT_BIT);
 
 			// char <= 255, so 256 is overflow, need do speical.
-
 			if ((x & MAX_BIT_V_MINUS1)==0){
 				//v6[0] = v1[0];
 				//v7[0] = v4[0];
@@ -262,7 +250,7 @@ void wdr_simu_cevaxm4()
 			bi1_vecc = vand(light16, 				(unsigned short)2047);
 			bi0_vecc = vsub((unsigned short)2048,     bi1_vecc);
 
-			vaccX = vmpy(v6, bi0_vecc);			
+			vaccX 	 = vmpy(v6, bi0_vecc);			
 			weight16 =  (ushort16)vmac(psl, v7, bi1_vecc, vaccX, (unsigned char)11);
 		#if DEBUG_VECC
 			ret += check_ushort16_vecc_result(weight,  weight16, 16);
@@ -318,14 +306,12 @@ void wdr_simu_cevaxm4()
 			weight16 	= (ushort16)vselect(vsub(weight16,const16_1), (short16)0, vpr0); // weight = light+512 or // weight = light+512
 			lindex16 	= vshiftr(weight16,  (unsigned char)4);
 
-			inM 		= scale_table;		
-			vpld(inM, lindex16, v1, v4);// v1 is scale_table[lindex[k]], v4 is scale_table[lindex[k]+1]
+			vpld((unsigned short*)scale_table , lindex16, v1, v4);// v1 is scale_table[lindex[k]], v4 is scale_table[lindex[k]+1]
 
 			weightLow16 = (uchar32)vand(weight16,(unsigned short )15); 
 			weightLow16 = (uchar32)vperm(weightLow16,vsub((uchar32)16,weightLow16),vconfig0);
 
-			vacc0 		= (uint16)8;	
-			weight16 	= vmac3(splitsrc, psl, v4, v1, weightLow16, vacc0, (unsigned char)4);
+			weight16 	= vmac3(splitsrc, psl, v4, v1, weightLow16, (uint16)8, (unsigned char)4);
 			vst(weight16,(ushort16*)ptmp5,vprMask); // vprMask handle with unalign in image board.
 		#if DEBUG_VECC
 			ret += check_ushort16_vecc_result(weight,  weight16, 16);
@@ -334,8 +320,7 @@ void wdr_simu_cevaxm4()
 				PRINT_CEVA_VRF("weight16",weight16,stderr);
 			}
 		#endif		
-			set_short16(inN , 0);
-			v1 = vpld(ptmp1,inN);
+			v1 = vpld(ptmp1,(short16)0);
 			vpr0 = vcmp(gt,v1,const16_2);
 			v1 = (ushort16)vsub(v1,const16_2); // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
 			v1 = (ushort16)vmac(psl, v1, weight16, const16_4, (unsigned char)10);
@@ -354,8 +339,9 @@ void wdr_simu_cevaxm4()
 			
 		}
 	}
+#ifdef __XM4__
 	PROFILER_END();
-
+#endif
 
 	if(pixel_in)
 		free(pixel_in);	
