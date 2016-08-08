@@ -96,7 +96,7 @@ void cul_wdr_cure(unsigned short *table, unsigned short exp_times);
 int check_wdr_result(RK_U16* data1, RK_U16* data2,int Wid ,int  Hgt);
 int check_ushort16_vecc_result(RK_U16* data1, ushort16 data2, int  num);
 
-void interpolationYaxis();
+void wdr_simu_cevaxm4();
 
 //////////////////////////////////////////////////////////////////////////
 

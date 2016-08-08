@@ -709,7 +709,7 @@ int MultiSetsTest()
 int main(void)//(int argc, char* argv[])
 {
 #if 0//WDR_USE_CEVA_VECC
-	interpolationYaxis();
+	wdr_simu_cevaxm4();
 #endif
     //
     int     ret = 0; // return value
