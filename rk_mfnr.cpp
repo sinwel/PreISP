@@ -5254,8 +5254,8 @@ int classMFNR::MFNR_Execute(void* pOutData)
 		//bayer_wdr(pRawDstGain, pRawDstGainWDR, mRawWid, mRawHgt, mIspGain, mTestParams[5]);// mTestParams[2]    n-Gain x n, n=1,2,... (n>=1, float)
 
 		bayer_wdr(pRawDstGain, pRawDstGainWDR,      mRawWid, mRawHgt, mIspGain, pRawDstWeight, mTestParams[5]);// mTestParams[2]    n-Gain x n, n=1,2,... (n>=1, float)
-
-		ceva_bayer_wdr(pRawDstGain, pRawDstGainWDR_CEVA, mRawWid, mRawHgt, mIspGain, pRawDstWeight, mTestParams[5]);// mTestParams[2]    n-Gain x n, n=1,2,... (n>=1, float)
+		wdr_cevaxm4_vecc(pRawDstGain, pRawDstGainWDR_CEVA, mRawWid, mRawHgt, mIspGain, pRawDstWeight, mTestParams[5]);
+		//ceva_bayer_wdr(pRawDstGain, pRawDstGainWDR_CEVA, mRawWid, mRawHgt, mIspGain, pRawDstWeight, mTestParams[5]);// mTestParams[2]    n-Gain x n, n=1,2,... (n>=1, float)
 
 		if(check_wdr_result(pRawDstGainWDR,pRawDstGainWDR_CEVA, mRawWid , mRawHgt))
 			fprintf(stderr,"WDR check failed.\n");

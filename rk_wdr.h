@@ -78,7 +78,13 @@ extern RK_U16      g_BaseThumbBuf[409600];                         // Thumb data
 void bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h, float max_scale, RK_U32* pGainMat, RK_F32 testParams_5); // 20160701
 void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h, float max_scale, RK_U32* pGainMat, RK_F32 testParams_5); // 20160701
 
-
+void wdr_cevaxm4_vecc(unsigned short *pixel_in, 
+					unsigned short *pixel_out, 
+					int w, 
+					int h, 
+					float max_scale, 
+					RK_U32* pGainMat, 
+					RK_F32 testParams_5);
 //inline 
 unsigned short clip16bit(unsigned long x);
 //inline 
