@@ -253,7 +253,8 @@ if(ENABLE_APP)
 							rk_precomp.h 
 							rk_scaler.cpp 
 							rk_scaler.h 
-							rk_typedef.h	)
+							rk_typedef.h	
+							profiler.h)
 	source_group(PreISP FILES ${preIspFiles})
 	
     check_include_files(getopt.h HAVE_GETOPT_H)

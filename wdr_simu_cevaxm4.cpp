@@ -147,7 +147,7 @@ void wdr_simu_cevaxm4()
 	for (y = 0; y < h; y++)
 	{
 		for (x = 0; x < wStride16; x+=16) // input/output 16 pixel result.
-		DSP_CEVA_UNROLL(8)
+		//DSP_CEVA_UNROLL(8)
 		{
 			// -------------------------------------------------------------- // 
 			/* x+256 for one loop */
