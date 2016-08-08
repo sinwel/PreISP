@@ -47,7 +47,7 @@
 					</folderInfo>
 					<fileInfo id="com.ceva.toolchain.xm4.exe.configuration.debug.1414227801.80258098" name="wdr_simu_cevaxm4.cpp" rcbsApplicability="disable" resourcePath="wdr_simu_cevaxm4.cpp" toolsToInvoke="com.ceva.toolchain.xm4.exe.compiler.cpp.debug.2115563858.2116547759">
 						<tool id="com.ceva.toolchain.xm4.exe.compiler.cpp.debug.2115563858.2116547759" name="CEVA-XM4 C/C++ Compiler" superClass="com.ceva.toolchain.xm4.exe.compiler.cpp.debug.2115563858">
-							<option id="com.ceva.toolchain.xm4.exe.compiler.cpp.option.cycle_count_optimization_level.debug.584537852" name="Speed optimization level" superClass="com.ceva.toolchain.xm4.exe.compiler.cpp.option.cycle_count_optimization_level.debug" value="xm4.compiler.cycle_count_optimization_level.-O3" valueType="enumerated"/>
+							<option id="com.ceva.toolchain.xm4.exe.compiler.cpp.option.cycle_count_optimization_level.debug.584537852" name="Speed optimization level" superClass="com.ceva.toolchain.xm4.exe.compiler.cpp.option.cycle_count_optimization_level.debug" value="xm4.compiler.cycle_count_optimization_level.-O2" valueType="enumerated"/>
 							<option id="xm4.compiler.general.-save-temps.532492022" name="Save all temporary files (-save-temps)" superClass="xm4.compiler.general.-save-temps" value="true" valueType="boolean"/>
 							<option id="xm4.compiler.code_generation.-OPTunroll_times_max.491140653" name="Max loop unrolling factor" superClass="xm4.compiler.code_generation.-OPTunroll_times_max" value="" valueType="string"/>
 							<inputType id="com.ceva.toolchain.xm4.compiler.c.input.1074841843" superClass="com.ceva.toolchain.xm4.compiler.c.input"/>
