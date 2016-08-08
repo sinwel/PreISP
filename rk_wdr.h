@@ -1,9 +1,20 @@
-// 
-//////////////////////////////////////////////////////////////////////////
-// File: rk_wdr.h
-//
-//////////////////////////////////////////////////////////////////////////
-// 
+/***************************************************************************
+**  
+**  rk_wdr.h
+**  
+**
+**  NOTE: NULL
+**   
+**  Author: zxy
+**  Contact: zxy@rock-chips.com
+**  2016/08/12 9:12:44 version 1.0
+**  
+**	version 1.0 	have not MERGE to branch.
+**   
+**
+** Copyright 2016, rockchip.
+**
+***************************************************************************/
 //#pragma  once
 #ifndef _RK_WDR_H
 #define _RK_WDR_H
@@ -28,6 +39,11 @@
 #define MAX_BIT_V_MINUS1 	((1<<SHIFT_BIT) - 1)
 #define SPLIT_SIZE 			MAX_BIT_VALUE
 
+
+#define DEBUG_VECC		    1
+#ifdef  XM4
+#define VECC_SIMU_DEBUG
+#endif
 
 #define WDR_WEIGHT_STRIDE   256  
 
@@ -97,6 +113,11 @@ int check_wdr_result(RK_U16* data1, RK_U16* data2,int Wid ,int  Hgt);
 int check_ushort16_vecc_result(RK_U16* data1, ushort16 data2, int  num);
 
 void wdr_simu_cevaxm4();
+
+void set_char32(uchar32 &data, int offset);
+
+void set_short16(short16 &data, int offset);
+
 
 //////////////////////////////////////////////////////////////////////////
 
