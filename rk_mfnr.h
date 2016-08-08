@@ -307,6 +307,7 @@ public:
 	
 	// Spatial Denoise
 	RK_U32*			pRawDstWeight;  // for zlf-SpaceDenoise
+	RK_U32*			pRawDstWeight_CEVA;  // for zlf-SpaceDenoise
 	RK_U16*         pRawDstCpy;     // Raw Dst data pointer
     //
     //////////////////////////////////////////////////////////////////////////

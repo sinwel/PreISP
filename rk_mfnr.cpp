@@ -1011,6 +1011,7 @@ int classMFNR::MFNR_Open(int wid, int hgt, int stride, int size, int numPic,
 
 	// SpaceDenoise
 	pRawDstWeight = (RK_U32 *)malloc(sizeof(RK_U32) * mRawWid * mRawHgt);  // for zlf-SpaceDenoise
+	pRawDstWeight_CEVA = (RK_U32 *)malloc(sizeof(RK_U32) * mRawWid * mRawHgt);  // for zlf-SpaceDenoise
 	//memset(pRawDstWeight, 0, sizeof(RK_U32) * mRawWid * mRawHgt);
 	pRawDstCpy  = (RK_U16 *)malloc(sizeof(RK_U16) * mRawWid * mRawHgt);
 
@@ -5254,10 +5255,12 @@ int classMFNR::MFNR_Execute(void* pOutData)
 		//bayer_wdr(pRawDstGain, pRawDstGainWDR, mRawWid, mRawHgt, mIspGain, mTestParams[5]);// mTestParams[2]    n-Gain x n, n=1,2,... (n>=1, float)
 
 		bayer_wdr(pRawDstGain, pRawDstGainWDR,      mRawWid, mRawHgt, mIspGain, pRawDstWeight, mTestParams[5]);// mTestParams[2]    n-Gain x n, n=1,2,... (n>=1, float)
-		wdr_cevaxm4_vecc(pRawDstGain, pRawDstGainWDR_CEVA, mRawWid, mRawHgt, mIspGain, pRawDstWeight, mTestParams[5]);
+		wdr_cevaxm4_vecc(pRawDstGain, pRawDstGainWDR_CEVA, mRawWid, mRawHgt, mIspGain, pRawDstWeight_CEVA, mTestParams[5]);
 		//ceva_bayer_wdr(pRawDstGain, pRawDstGainWDR_CEVA, mRawWid, mRawHgt, mIspGain, pRawDstWeight, mTestParams[5]);// mTestParams[2]    n-Gain x n, n=1,2,... (n>=1, float)
 
-		if(check_wdr_result(pRawDstGainWDR,pRawDstGainWDR_CEVA, mRawWid , mRawHgt))
+		if(check_wdr_result(pRawDstGainWDR,pRawDstGainWDR_CEVA, mRawWid , mRawHgt) 
+			//|| check_wdr_result(pRawDstWeight,pRawDstWeight_CEVA, mRawWid , mRawHgt)	
+		   )
 			fprintf(stderr,"WDR check failed.\n");
 
 
@@ -5612,6 +5615,11 @@ int classMFNR::MFNR_Close(void)
 	{
 		free(pRawDstWeight);
 		pRawDstWeight = NULL;
+	}
+	if (pRawDstWeight_CEVA != NULL)
+	{
+		free(pRawDstWeight_CEVA);
+		pRawDstWeight_CEVA = NULL;
 	}
 	if (pRawDstCpy != NULL)
 	{

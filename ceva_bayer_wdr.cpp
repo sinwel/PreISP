@@ -794,13 +794,16 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 
 	// align 16.
 	RK_U16 		*pixel_in_vecc	= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
-	//RK_U16 		*pGainMat_vecc 	= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
+	RK_U16 		*pGainMat_align = (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
+	RK_U16 		*pGainMat_vecc 	= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
 	RK_U16 		*pixel_out_align= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16)); 
 	RK_U16 		*pixel_out_vecc = (RK_U16*)malloc(wStride16*h*sizeof(RK_U16)); 
 	RK_U16		*ptmp0 = pixel_in;
 	RK_U16		*ptmp1 = pixel_in_vecc;
 	RK_U16		*ptmp2 = pixel_out_align;
 	RK_U16		*ptmp3 = pixel_out_vecc;
+	RK_U16		*ptmp4 = pGainMat_align;
+	RK_U16		*ptmp5 = pGainMat_vecc;
 	
 	// copy input with stride.
 	for ( i = 0 ; i < h ; i++ )
@@ -1205,7 +1208,7 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 				weight[k] = ( scale_table[lindex[k]]     * (16 - (weight[k] & 15)) 
 							+ scale_table[lindex[k] + 1] * (weight[k] & 15) + 8  ) >> 4;
 
-				//*(pGainMat + y*w + x + k) = (RK_U32)weight[k]; // for zlf-SpaceDenoise
+				*(pGainMat_align + y*w + x + k) = (RK_U32)weight[k]; // for zlf-SpaceDenoise
 
 				if(*ptmp0>blacklevel*2)
 					*ptmp2++ = clip10bit(((*ptmp0++) - blacklevel * 2)*weight[k] / 1024 + blacklevel/4);
@@ -1238,6 +1241,7 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 
 			vacc0 = (uint16)8;	
 			weight16 = vmac3(splitsrc, psl, v4, v1, weightLow16, vacc0, (unsigned char)4);
+			vst(weight16,(ushort16*)ptmp5,vprMask); // vprMask handle with unalign in image board.
 		#if DEBUG_VECC
 			ret += check_ushort16_vecc_result(weight,  weight16, 16);
 			if (ret){
@@ -1266,8 +1270,9 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 			//}
 			//else
 			{
-				ptmp1  += 16;
+				ptmp1 += 16;
 				ptmp3 += 16;
+				ptmp5 += 16;
 			}
 			
 		}
@@ -1275,20 +1280,25 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 
 
 	ptmp0 = pixel_out;
-	ptmp2 = pixel_out_align;
+	ptmp1 = pixel_out_align;
+	//ptmp2 = (RK_U16*)pGainMat;
+
 	// copy output to pixel_out from pixel_out_align(align 16).
 	for ( i = 0 ; i < h ; i++ )
 	{
-		memcpy(ptmp0,ptmp2,sizeof(RK_U16)*w);
+		memcpy(ptmp0,ptmp1,sizeof(RK_U16)*w);
 		ptmp0 		+= w;
-		ptmp2 		+= wStride16;
+		ptmp1 		+= wStride16;
+		//memcpy(ptmp2,ptmp4,sizeof(RK_U16)*w);
+		//ptmp2 		+= w;
+		//ptmp4 		+= wStride16;
 	}
 	if(plight)
 		free(plight);
-	//if(pGainMat)
-	//	free(pGainMat);
-	//if(pGainMat_vecc)
-	//	free(pGainMat_vecc);
+	if(pGainMat_align)
+		free(pGainMat_align);
+	if(pGainMat_vecc)
+		free(pGainMat_vecc);
 	if(pixel_in_vecc)
 		free(pixel_in_vecc);
 	if(pixel_out_align)
