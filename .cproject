@@ -44,6 +44,19 @@
 							<tool id="com.ceva.toolchain.xm4.libmanager.1176938642" name="CEVA-XM4 Library Manager" superClass="com.ceva.toolchain.xm4.libmanager"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.ceva.toolchain.xm4.exe.configuration.debug.1414227801.80258098" name="wdr_simu_cevaxm4.cpp" rcbsApplicability="disable" resourcePath="wdr_simu_cevaxm4.cpp" toolsToInvoke="com.ceva.toolchain.xm4.exe.compiler.cpp.debug.2115563858.2116547759">
+						<tool id="com.ceva.toolchain.xm4.exe.compiler.cpp.debug.2115563858.2116547759" name="CEVA-XM4 C/C++ Compiler" superClass="com.ceva.toolchain.xm4.exe.compiler.cpp.debug.2115563858">
+							<option id="com.ceva.toolchain.xm4.exe.compiler.cpp.option.cycle_count_optimization_level.debug.584537852" name="Speed optimization level" superClass="com.ceva.toolchain.xm4.exe.compiler.cpp.option.cycle_count_optimization_level.debug" value="xm4.compiler.cycle_count_optimization_level.-O4" valueType="enumerated"/>
+							<inputType id="com.ceva.toolchain.xm4.compiler.c.input.1074841843" superClass="com.ceva.toolchain.xm4.compiler.c.input"/>
+							<inputType id="com.ceva.toolchain.xm4.compiler.cpp.input.1363920116" superClass="com.ceva.toolchain.xm4.compiler.cpp.input"/>
+						</tool>
+						<tool customBuildStep="true" id="org.eclipse.cdt.managedbuilder.ui.rcbs.187081553" name="Resource Custom Build Step">
+							<inputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.inputtype.1281335544" name="Resource Custom Build Step Input Type">
+								<additionalInput kind="additionalinputdependency" paths=""/>
+							</inputType>
+							<outputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.outputtype.1962449445" name="Resource Custom Build Step Output Type"/>
+						</tool>
+					</fileInfo>
 					<sourceEntries>
 						<entry excluding="Debug/compat|Debug/build|si|matlab_ext|compat|cmake|build|rk_scaler.cpp|rk_mfnr.cpp|rk_memory.cpp|main.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>

@@ -84,7 +84,8 @@ void wdr_simu_cevaxm4()
 	unsigned short left[9],right[9];
 	unsigned short left_vecc[9],right_vecc[9];
 	
-	int x, y, w = 4164, h=3136;
+	//int x, y, w = 4164, h=3136;
+	int x, y, w = 128, h=32;
   	int wStride16 = ((w + 15)/16)*16 ;
   	int sw = (w + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	int sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
@@ -126,7 +127,7 @@ void wdr_simu_cevaxm4()
 
 	
 	PROFILER_START(h, w);
-	for (y = 1; y < h; y++)
+	for (y = 0; y < h; y++)
 	{
 		for (x = 0; x < wStride16; x+=16) // input/output 16 pixel result.
 		{
