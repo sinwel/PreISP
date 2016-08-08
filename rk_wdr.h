@@ -40,13 +40,13 @@
 #define SPLIT_SIZE 			MAX_BIT_VALUE
 
 
-#define DEBUG_VECC		    1
+#define DEBUG_VECC		    0
 #ifdef  XM4
 #define VECC_SIMU_DEBUG
 #endif
 
 #define WDR_WEIGHT_STRIDE   256  
-
+#ifdef WIN32
 #define PRINT_C_GROUP(namestr,var,num,fp,...) \
     {\
         if (fp) \
@@ -84,7 +84,11 @@
         else \
         fprintf(stderr,"\n"); \
     }
+#else
+    #define PRINT_C_GROUP(namestr,var,num,fp,...)  
+    #define PRINT_CEVA_VRF(namestr,vReg,fp,...)  
 
+#endif
 
 extern RK_U16      g_BaseThumbBuf[409600];                         // Thumb data pointers
 

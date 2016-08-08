@@ -10,6 +10,7 @@ unsigned short cure_table[24][961] =
 
 int check_ushort16_vecc_result(RK_U16* data1, ushort16 data2, int  num)
 {
+#ifdef WIN32
 	for ( int i = 0 ; i < num ; i++ )
 	{
         if(data1[i] != data2[i] )
@@ -17,12 +18,14 @@ int check_ushort16_vecc_result(RK_U16* data1, ushort16 data2, int  num)
 			return -1;
         }
 	}
+#endif
 	return 0;
 }
 
 
 int check_wdr_result(RK_U16* data1, RK_U16* data2,int Wid ,int  Hgt)
 {
+#ifdef WIN32
 	for ( int i = 0 ; i < Hgt ; i++ )
 	{
 	    for ( int j = 0 ; j < Wid ; j++ )
@@ -33,6 +36,7 @@ int check_wdr_result(RK_U16* data1, RK_U16* data2,int Wid ,int  Hgt)
 	        }
 	    }
 	}
+#endif
 	return 0;
 }
 

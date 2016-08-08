@@ -461,6 +461,8 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 	uint16 vacc0,vacc1,vacc2,vacc3;
 	int16  vaccX;
 	unsigned short left[9],right[9];
+	unsigned short left_vecc[9],right_vecc[9];
+
 	int x, y;
   	int wStride16 = ((w + 15)/16)*16 ;
   	int sw = (w + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
@@ -787,6 +789,11 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 					v2 		= vmac3(psl, v2, bi0, v3, bi1, vacc0, (unsigned char)SHIFT_BIT);
 
 				}
+			#ifdef XM4
+				vst(v0,(ushort16*)left_vecc,0x1ff); // store 9 points.
+ 				vst(v2,(ushort16*)right_vecc,0x1ff); // store 9 points.
+			#endif
+				
 			#if DEBUG_VECC			
 				ret  = check_ushort16_vecc_result(left,  v0, 9);
 				ret += check_ushort16_vecc_result(right, v2, 9);
@@ -821,11 +828,14 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 			light16  	= *(ushort16*)&plight[y*w + x];
 			light16  	= (ushort16)vcmpmov(lt, light16, (ushort16)16*1023);
 			lindex16 	= vshiftr(light16, (unsigned char) 11);
-
+		#ifdef WIN32
 			// get left(v0) and right(v2) from VRF register by vperm.
 			vpld((unsigned short*)&v0[0], lindex16, v1, v4);
 			vpld((unsigned short*)&v2[0], lindex16, v3, v5);
-
+		#else
+			vpld((unsigned short*)left_vecc, lindex16, v1, v4);
+			vpld((unsigned short*)right_vecc, lindex16, v3, v5);
+		#endif
 			set_char32(bifactor_xAxis,x);		
 			vacc0 		= (uint16) 0;
 			v6 			= vmac3(splitsrc, psl, v1, v3, bifactor_xAxis, vacc0, (unsigned char)SHIFT_BIT);
@@ -834,8 +844,8 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 			// char <= 255, so 256 is overflow, need do speical.
 
 			if ((x & MAX_BIT_V_MINUS1)==0){
-				v6[0] = v1[0];
-				v7[0] = v4[0];
+				//v6[0] = v1[0];
+				//v7[0] = v4[0];
 			}
 		#if DEBUG_VECC
 			ret += check_ushort16_vecc_result(weight1,  v6, 16);
