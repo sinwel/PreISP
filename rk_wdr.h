@@ -48,6 +48,16 @@
 #define VECC_SIMU_DEBUG
 #endif
 
+#define VECC_16 0
+#if VECC_16
+#define VECC_ONCE_LEN 			128
+#define VECC_GROUP_SIZE 		(128/16)
+#else
+#define VECC_ONCE_LEN 			64
+#define VECC_GROUP_SIZE 		(64/16)
+
+#endif
+
 #define WDR_WEIGHT_STRIDE   256  
 #ifdef WIN32
 #define PRINT_C_GROUP(namestr,var,start_pos,num,fp,...) \

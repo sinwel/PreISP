@@ -708,7 +708,7 @@ int MultiSetsTest()
 //
 int main(void)//(int argc, char* argv[])
 {
-#if 1//WDR_USE_CEVA_VECC
+#if VECC_SIMU_DEBUG
 	wdr_simu_cevaxm4();
 #endif
     //

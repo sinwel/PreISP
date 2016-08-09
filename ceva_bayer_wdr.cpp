@@ -454,54 +454,76 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 					RK_U32* pGainMat, 
 					RK_F32 testParams_5)
 {
-	RK_U16		light[16];
-	RK_U16		pweight_vecc[9][256] = {0};// actully is 17x13 = 221
-	RK_U16 		weight1[16];
-	RK_U16 		weight2[16];
-	RK_U16 		weight[16];
-	RK_U16 		lindex[16],lindexSingle;
-	RK_U16		scale_table[1025];
+	RK_U16				light[VECC_ONCE_LEN];
+	RK_U16				pweight_vecc[9][256] = {0};// actully is 17x13 = 221
+	RK_U16 				weight1[VECC_ONCE_LEN];
+	RK_U16 				weight2[VECC_ONCE_LEN];
+	RK_U16 				weight[VECC_ONCE_LEN],weight_bak[VECC_ONCE_LEN];
+	RK_U16 				lindex[VECC_ONCE_LEN],lindexSingle;
+	RK_U16				scale_table[1025];
 
 
 	int 		blacklevel=256;
-
-	ushort16 	light16,weight16,resi16,const16_1,const16_2;
-	uchar32 	weightLow16;
+	ushort16* 			plight16[VECC_GROUP_SIZE];
+	ushort16 			light16[VECC_GROUP_SIZE],weight16[VECC_GROUP_SIZE],resi16[VECC_GROUP_SIZE];
+	
+	uchar32 			weightLow16[VECC_GROUP_SIZE];
 
 	unsigned char config_list[32] = {0,  2,  4,  6,  8,  10, 12, 14, 
 									 16, 18, 20, 22, 24, 26, 28, 30,
 									 32, 34, 36, 38, 40, 42, 44, 46, 
 									 48, 50, 52, 54, 56, 58, 60, 62 };
 	uchar32 vconfig0 = *(uchar32*)(&config_list[0]);
+	short				offset_in_C[16] = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
+	short16				offset_in = *(short16*)offset_in_C;
+	
+ 	short16 			lindex16[VECC_GROUP_SIZE],const16 	= (short16)512;
+	ushort16 			const16mpy4 		= (ushort16)(blacklevel*4);
+	ushort16 			const16mpy2 		= (ushort16)(blacklevel*2);
+	ushort16 			const16div4 		= (ushort16)(blacklevel/4);
+	uint16   			const16mpy256 	 	= (uint16)(blacklevel*256);
+	short16 			inN0,inN1	;
+	ushort16 			v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15;
+	ushort16 			v16,v17,v18,v19,v20,v21,v22,v23,v24,v25,v26,v27,v28,v29,v30,v31;
 
-	
-	short16 	lindex16,const16;
-	const16 	= (short16)512;
-	const16_1 	= (ushort16)(blacklevel*4);
-	const16_2 	= (ushort16)(blacklevel*2);
-	ushort16 const16_3 = (ushort16)(blacklevel/4);
-	uint16   const16_4 = (uint16)(blacklevel*256);
-	short16 inN	;
-	ushort16 v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11;
-	const unsigned short* inM;
-	
-	short offset;
-	unsigned short bi0,bi1;
-	short16 bi0_vecc,bi1_vecc;
-	unsigned short vpr0,vpr1,vpr2,vprMask = 0xffff;
-	
-	uchar32	bifactor_xAxis;	
-	uint16 vacc0,vacc1,vacc2,vacc3;
-	int16  vaccX;
+	short 				offset,chunkStrideBytes = 256, ptrChunks[16];
+	ptrChunks[0] = chunkStrideBytes * 0;
+	ptrChunks[1] = chunkStrideBytes * 1;
+	ptrChunks[2] = chunkStrideBytes * 2;
+	ptrChunks[3] = chunkStrideBytes * 3;
+	ptrChunks[4] = chunkStrideBytes * 4;
+	ptrChunks[5] = chunkStrideBytes * 5;
+	ptrChunks[6] = chunkStrideBytes * 6;
+	ptrChunks[7] = chunkStrideBytes * 7;
+	ptrChunks[8] = chunkStrideBytes * 8;
+	ptrChunks[9] = 0;
+	ptrChunks[10] = 0;
+	ptrChunks[11] = 0;
+	ptrChunks[12] = 0;
+	ptrChunks[13] = 0;
+	ptrChunks[14] = 0;
+	ptrChunks[15] = 0;
+	short16 			ptrChan = *(short16*)ptrChunks;
+	unsigned short 		bi0,bi1;
+	short16 			bi0_vecc[VECC_GROUP_SIZE],bi1_vecc[VECC_GROUP_SIZE];
+	unsigned short 		vpr0[VECC_GROUP_SIZE];
+	unsigned short 		vpr1[VECC_GROUP_SIZE];
+	unsigned short 		vpr2[VECC_GROUP_SIZE];
+	unsigned short 		vpr3[VECC_GROUP_SIZE];
+	unsigned short 		vprMask = 0xffff,vprRightMask = 0xffff, vprYinterMask = 0xffff;
+	uchar32				biBase,bifactor_xAxis[VECC_GROUP_SIZE];	
+	set_char32(biBase,0);		
+	int16 				vacc0,vacc1,vacc2,vacc3;
+
 	unsigned short left[9],right[9];
 	unsigned short left_vecc[9],right_vecc[9];
 
 	int x, y;
-  	int wStride16 = ((w + 15)/16)*16 ;
+  	
+  	int wStride16 = ((w + (VECC_ONCE_LEN-1))/VECC_ONCE_LEN)*VECC_ONCE_LEN ;
   	int sw = (w + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	int sh = (h + (SPLIT_SIZE>>1))/SPLIT_SIZE + 1;
 	int i,k,ret = 0;
-	short chunkStrideBytes = 256, ptrChunks[16] = {0};
 
 	// align 16.
 	RK_U16 		*pixel_in_vecc	= (RK_U16*)malloc(wStride16*h*sizeof(RK_U16));
@@ -754,16 +776,23 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 
 	for (y = 0; y < h; y++)
 	{
-		for (x = 0; x < wStride16; x+=16) // input/output 16 pixel result.
+		for (x = 0; x < wStride16; x+=VECC_ONCE_LEN) // input/output 16 pixel result.
+		//DSP_CEVA_UNROLL(8)
 		{
-			//if ((x + 16) > w)
-			//	vprMask = ((1 << ((w-x) & 15)) - 1) & 0xffff;
-			//else
-			//	vprMask = 0xffff;
 			// -------------------------------------------------------------- // 
 			/* x+256 for one loop */
 			if ((x & MAX_BIT_V_MINUS1) == 0)// the first 2D block (x,y) do once.
 			{
+				if ((y & MAX_BIT_V_MINUS1)==0)
+					vprYinterMask = 0x0;
+				else
+					vprYinterMask = 0xffff;
+				
+				bi1 	= (y & MAX_BIT_V_MINUS1);
+				bi0 	= (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1));
+				offset 	= (y >> SHIFT_BIT)*sw;
+
+				vprRightMask = 0xfffe;
 			#if DEBUG_VECC
 				for (i = 0; i < 9; i++)
 				{
@@ -775,57 +804,21 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 						+ pweight_mat_vecc[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw + 1] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 				}
 			#endif
-				inM = pweight_mat_vecc[0];				
-				offset = (y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT);
-				ptrChunks[0] = chunkStrideBytes * 0 + offset;
-				ptrChunks[1] = chunkStrideBytes * 1 + offset;
-				ptrChunks[2] = chunkStrideBytes * 2 + offset;
-				ptrChunks[3] = chunkStrideBytes * 3 + offset;
-				ptrChunks[4] = chunkStrideBytes * 4 + offset;
-				ptrChunks[5] = chunkStrideBytes * 5 + offset;
-				ptrChunks[6] = chunkStrideBytes * 6 + offset;
-				ptrChunks[7] = chunkStrideBytes * 7 + offset;
-				ptrChunks[8] = chunkStrideBytes * 8 + offset;
-				inN 		 = *(short16*)ptrChunks;
+				offset 		+= (x >> SHIFT_BIT);				
+				inN0 		 = vadd(ptrChan,(short16)offset);
+				inN1 		 = vadd(inN0,	(short16)sw);				
+				vpld((unsigned short*)pweight_mat_vecc[0], inN0, v0, v2);
+				vpld((unsigned short*)pweight_mat_vecc[0], inN1, v1, v3);
 
-				vpld(inM, inN, v0, v2);
-				//PRINT_CEVA_VRF("v0",v0,stderr);
-				//PRINT_CEVA_VRF("v2",v2,stderr);
 
-				offset += sw;
-				ptrChunks[0] = chunkStrideBytes * 0 + offset;
-				ptrChunks[1] = chunkStrideBytes * 1 + offset;
-				ptrChunks[2] = chunkStrideBytes * 2 + offset;
-				ptrChunks[3] = chunkStrideBytes * 3 + offset;
-				ptrChunks[4] = chunkStrideBytes * 4 + offset;
-				ptrChunks[5] = chunkStrideBytes * 5 + offset;
-				ptrChunks[6] = chunkStrideBytes * 6 + offset;
-				ptrChunks[7] = chunkStrideBytes * 7 + offset;
-				ptrChunks[8] = chunkStrideBytes * 8 + offset;
-				inN 		 = *(short16*)ptrChunks;
-				vpld(inM, inN, v1, v3);
-				//PRINT_CEVA_VRF("v1",v1,stderr);
-				//PRINT_CEVA_VRF("v3",v3,stderr);
-
-				/* DO interpolation, left by v0/v1, right by v2/v3, when y is zero, do copy v0/v2 only rather than vmac3 */
-				if ((y & MAX_BIT_V_MINUS1)==0)
-				{
-					v0 = v0;
-					v2 = v2;
-				}
-				else 
-				{
-					bi0 	= (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1));
-					bi1 	= (y & MAX_BIT_V_MINUS1);
-					vacc0 	= (uint16) 0;
-					v0 		= vmac3(psl, v0, bi0, v1, bi1, vacc0, (unsigned char)SHIFT_BIT);
-					v2 		= vmac3(psl, v2, bi0, v3, bi1, vacc0, (unsigned char)SHIFT_BIT);
-
-				}
-			#ifdef XM4
+				/* DO interpolation, left by v0/v1, right by v2/v3, when y is zero, 
+					do copy v0/v2 only rather than vmac3 */
+				v0 = vselect(vmac3(psl, v0, bi0, v1, bi1, (uint16) 0, (unsigned char)SHIFT_BIT),v0, vprYinterMask); 
+				v2 = vselect(vmac3(psl, v2, bi0, v3, bi1, (uint16) 0, (unsigned char)SHIFT_BIT),v2, vprYinterMask);
+				
 				vst(v0,(ushort16*)left_vecc,0x1ff); // store 9 points.
  				vst(v2,(ushort16*)right_vecc,0x1ff); // store 9 points.
-			#endif
+
 				
 			#if DEBUG_VECC			
 				ret  = check_ushort16_vecc_result(left,  v0, 9);
@@ -837,10 +830,12 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 				assert(ret == 0);
 			#endif
 			}
+			else
+				vprRightMask = 0xffff;
 			// -------------------------------------------------------------- // 
 		#if DEBUG_VECC			
-			/* x+16 for one loop */
-			for  ( k = 0 ; k < 16 ; k++ )
+			/* x+VECC_ONCE_LEN for one loop */
+			for  ( k = 0 ; k < VECC_ONCE_LEN ; k++ )
 			{
     			light[k] 	= plight[y*w + x + k];
 				if (light[k]>16*1023)
@@ -858,54 +853,118 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 
 			}
 		#endif
-			light16  	= *(ushort16*)&plight[y*w + x];
-			light16  	= (ushort16)vcmpmov(lt, light16, (ushort16)16*1023);
-			lindex16 	= vshiftr(light16, (unsigned char) 11);
-		#ifdef WIN32
-			// get left(v0) and right(v2) from VRF register by vperm.
-			vpld((unsigned short*)&v0[0], lindex16, v1, v4);
-			vpld((unsigned short*)&v2[0], lindex16, v3, v5);
-		#else
-			vpld((unsigned short*)left_vecc, lindex16, v1, v4);
-			vpld((unsigned short*)right_vecc, lindex16, v3, v5);
-		#endif
-			set_char32(bifactor_xAxis,x);		
-			vacc0 		= (uint16) 0;
-			v6 			= vmac3(splitsrc, psl, v1, v3, bifactor_xAxis, vacc0, (unsigned char)SHIFT_BIT);
-			v7 			= vmac3(splitsrc, psl, v4, v5, bifactor_xAxis, vacc0, (unsigned char)SHIFT_BIT);
+			// light[k] 	= plight[y*w + x + k];
+			light16[0]  	= *(ushort16*)&plight[y*w + x];
+			light16[1]  	= *(ushort16*)&plight[y*w + x + 16];
+			light16[2]  	= *(ushort16*)&plight[y*w + x + 32];
+			light16[3]  	= *(ushort16*)&plight[y*w + x + 48];
 
+
+			// light[k]>16*1023
+			light16[0]  	= (ushort16)vcmpmov(lt, light16[0], (ushort16)16*1023);
+			light16[1]  	= (ushort16)vcmpmov(lt, light16[1], (ushort16)16*1023);
+			light16[2]  	= (ushort16)vcmpmov(lt, light16[2], (ushort16)16*1023);
+			light16[3]  	= (ushort16)vcmpmov(lt, light16[3], (ushort16)16*1023);
+
+			// lindex[k]  	= light[k] >> 11;
+			lindex16[0] 	= vshiftr(light16[0], (unsigned char) 11);
+			lindex16[1] 	= vshiftr(light16[1], (unsigned char) 11);
+			lindex16[2] 	= vshiftr(light16[2], (unsigned char) 11);
+			lindex16[3] 	= vshiftr(light16[3], (unsigned char) 11);
+
+
+			// load left[lindex[k]],left[lindex[k]+1]
+			// load right[lindex[k]],left[lindex[k]+1]
+			vpld((unsigned short*)left_vecc,  lindex16[0], v0, v1);
+			vpld((unsigned short*)right_vecc, lindex16[0], v2, v3);
+
+			vpld((unsigned short*)left_vecc,  lindex16[1], v4, v5);
+			vpld((unsigned short*)right_vecc, lindex16[1], v6, v7);
+
+			vpld((unsigned short*)left_vecc,  lindex16[2], v8, v9);
+			vpld((unsigned short*)right_vecc, lindex16[2], v10, v11);
+		
+			vpld((unsigned short*)left_vecc,  lindex16[3], v12, v13);
+			vpld((unsigned short*)right_vecc, lindex16[3], v14, v15);
+
+			// (MAX_BIT_VALUE - ((x + k) & MAX_BIT_V_MINUS1)) || (x + k) & MAX_BIT_V_MINUS1)
+			bifactor_xAxis[0] = (uchar32)vselect(vsub(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 
+									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x0000ffff);
+			bifactor_xAxis[1] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 16)&MAX_BIT_V_MINUS1)), 
+									 vadd(biBase,(uchar32)((x + 16)&MAX_BIT_V_MINUS1)), 0x0000ffff);
+			bifactor_xAxis[2] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 32)&MAX_BIT_V_MINUS1)), 
+									 vadd(biBase,(uchar32)((x + 32)&MAX_BIT_V_MINUS1)), 0x0000ffff);
+			bifactor_xAxis[3] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 48)&MAX_BIT_V_MINUS1)), 
+									 vadd(biBase,(uchar32)((x + 48)&MAX_BIT_V_MINUS1)), 0x0000ffff);
+		
 			// char <= 255, so 256 is overflow, need do speical.
+			// v0 the first unit do copy v0[0] when "0 == (x&MAX_BIT_V_MINUS1) "
 
-			if ((x & MAX_BIT_V_MINUS1)==0){
-				//v6[0] = v1[0];
-				//v7[0] = v4[0];
-			}
+			//v0 = vmac3(splitsrc, psl, v0, v2, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT) & vprRightMask;
+			//v1 = vmac3(splitsrc, psl, v1, v3, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT);
+
+			v0 = vselect(vmac3(splitsrc, psl, v0, v2, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT),v0, vprRightMask); 
+			v1 = vselect(vmac3(splitsrc, psl, v1, v3, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT),v1, vprRightMask); 
+			v2 = vmac3(splitsrc, psl, v4, v6, bifactor_xAxis[1], (uint16) 0, (unsigned char)SHIFT_BIT);
+			v3 = vmac3(splitsrc, psl, v5, v7, bifactor_xAxis[1], (uint16) 0, (unsigned char)SHIFT_BIT);
+			v4 = vmac3(splitsrc, psl, v8, v10, bifactor_xAxis[2], (uint16) 0, (unsigned char)SHIFT_BIT);
+			v5 = vmac3(splitsrc, psl, v9, v11, bifactor_xAxis[2], (uint16) 0, (unsigned char)SHIFT_BIT);
+			v6 = vmac3(splitsrc, psl, v12, v14, bifactor_xAxis[3], (uint16) 0, (unsigned char)SHIFT_BIT);
+			v7 = vmac3(splitsrc, psl, v13, v15, bifactor_xAxis[3], (uint16) 0, (unsigned char)SHIFT_BIT);
+		 
+
+			
+			//weight[k] 	= (weight1[k]*(2048 - (light[k] & 2047)) + weight2[k]*(light[k]  & 2047)) / 2048;
+			bi1_vecc[0] = vand(light16[0], 				(unsigned short)2047);
+			bi1_vecc[1] = vand(light16[1], 				(unsigned short)2047);
+			bi1_vecc[2] = vand(light16[2], 				(unsigned short)2047);
+			bi1_vecc[3] = vand(light16[3], 				(unsigned short)2047);
+
+			bi0_vecc[0] = vsub((unsigned short)2048,     bi1_vecc[0]);
+			bi0_vecc[1] = vsub((unsigned short)2048,     bi1_vecc[1]);
+			bi0_vecc[2] = vsub((unsigned short)2048,     bi1_vecc[2]);
+			bi0_vecc[3] = vsub((unsigned short)2048,     bi1_vecc[3]);
+
+			vacc0 	 	= vmpy(v0, bi0_vecc[0]);			
+			vacc1 	 	= vmpy(v2, bi0_vecc[1]);			
+			vacc2 	 	= vmpy(v4, bi0_vecc[2]);			
+			vacc3 	 	= vmpy(v6, bi0_vecc[3]);			
+
+			weight16[0] =  (ushort16)vmac(psl, v1, bi1_vecc[0], vacc0, (unsigned char)11);
+			weight16[1] =  (ushort16)vmac(psl, v3, bi1_vecc[1], vacc1, (unsigned char)11);
+			weight16[2] =  (ushort16)vmac(psl, v5, bi1_vecc[2], vacc2, (unsigned char)11);
+			weight16[3] =  (ushort16)vmac(psl, v7, bi1_vecc[3], vacc3, (unsigned char)11);
+
+
+			
 		#if DEBUG_VECC
-			ret += check_ushort16_vecc_result(weight1,  v6, 16);
-			ret += check_ushort16_vecc_result(weight2,  v7, 16);
+			ret += check_ushort16_vecc_result(weight1 + 0,   v0, 16);
+			ret += check_ushort16_vecc_result(weight1 + 16,  v2, 16);
+			ret += check_ushort16_vecc_result(weight1 + 32,  v4, 16);
+			ret += check_ushort16_vecc_result(weight1 + 48,  v6, 16);
+			ret += check_ushort16_vecc_result(weight2 + 0,   v1, 16);
+			ret += check_ushort16_vecc_result(weight2 + 16,  v3, 16);
+			ret += check_ushort16_vecc_result(weight2 + 32,  v5, 16);
+			ret += check_ushort16_vecc_result(weight2 + 48,  v7, 16);
 			if (ret){
-				PRINT_C_GROUP("w1",weight1,0, 16,stderr);
-				PRINT_CEVA_VRF("v6",v6,stderr);
-				
-				PRINT_C_GROUP("w2",weight2,0, 16,stderr);
-				PRINT_CEVA_VRF("v7",v7,stderr);
+				PRINT_C_GROUP("w1",weight1,0, 64,stderr);
+				PRINT_C_GROUP("w2",weight2,0, 64,stderr);
 			}
 			assert(ret == 0);
-		#endif		
-			bi1_vecc 	= vand(light16, 				(unsigned short)2047);
-			bi0_vecc 	= vsub((unsigned short)2048,     bi1_vecc);
-
-			vaccX 		= vmpy(v6, bi0_vecc);			
-			weight16 	=  (ushort16)vmac(psl, v7, bi1_vecc, vaccX, (unsigned char)11);
-		#if DEBUG_VECC
-			ret += check_ushort16_vecc_result(weight,  weight16, 16);
+			ret += check_ushort16_vecc_result(weight+  0, weight16[0], 16);
+			ret += check_ushort16_vecc_result(weight+ 16, weight16[1], 16);
+			ret += check_ushort16_vecc_result(weight+ 32, weight16[2], 16);
+			ret += check_ushort16_vecc_result(weight+ 48, weight16[3], 16);
 			if (ret){
-				PRINT_CEVA_VRF("weight16",weight16,stderr);
+				PRINT_CEVA_VRF("weight16",weight16[0],stderr);
+				PRINT_CEVA_VRF("weight16",weight16[1],stderr);
+				PRINT_CEVA_VRF("weight16",weight16[2],stderr);
+				PRINT_CEVA_VRF("weight16",weight16[3],stderr);
 			}
 			assert(ret == 0);
 
-			/* x+16 for one loop */
-			for  ( k = 0 ; k < 16; k++ )
+			// x+VECC_ONCE_LEN for one loop 
+			for  ( k = 0 ; k < VECC_ONCE_LEN ; k++ )
 			{
 			#if 0
 				if (abs(weight[k]-light[k])>512)
@@ -916,26 +975,28 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 						weight[k] = light[k]+512;
 				}
 				
-			
-			
+				
 				if(weight[k]>blacklevel*4)
 					weight[k] = weight[k]-blacklevel*4;
 				else
 					weight[k] = 0;
 			#else
-				/*
-				if((light-512) > weight)
-						weight = light-512;
-				if((light+512) < weight)
-						weight = light+512;
+
+				if((light[k]-512) > weight[k])
+						weight[k] = light[k]-512;
+				if((light[k]+512) < weight[k])
+						weight[k] = light[k]+512;
 				
-				*/
-				weight[k] = clip16bit_ceva(weight[k], light[k]-512, light[k]+512);
 				
+				weight_bak[k] = clip16bit_ceva(weight[k], light[k]-512, light[k]+512);
+				assert(weight[k]==weight_bak[k]);
+
 				if((weight[k] - blacklevel*4) > 0)
 					weight[k]  = weight[k] - blacklevel*4;
 				else
 					weight[k]  = 0;
+				//weight_bak = clip16bit_ceva(weight_bak - blacklevel*4, 0, abs(weight_bak - blacklevel*4));
+				//assert(weight==weight_bak);
 			#endif
 				
 				lindex[k] = weight[k] >> 4;
@@ -956,63 +1017,113 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 			}
 		#endif	
 			// -------------------------------------------------------------- // 
-			resi16 		= vabssub(light16,weight16);			
-			vpr0 		= vabscmp(gt, (short16)resi16, const16);// weight need be clip by light
-			vpr1 		= vcmp(gt,weight16,light16)&vpr0;// weight > light
-			vpr2 		= vcmp(le,weight16,light16)&vpr0;// weight > light
-			weight16 	= (ushort16)vselect(vadd((short16)light16,const16), weight16, vpr1); // weight = light+512 or // weight = light+512
-			weight16 	= (ushort16)vselect(vsub((short16)light16,const16), weight16, vpr2); // weight = light+512 or // weight = light+512
 
-			vpr0 		= vcmp(gt,weight16,const16_1);
-			weight16 	= (ushort16)vselect(vsub(weight16,const16_1), (short16)0, vpr0); // weight = light+512 or // weight = light+512
-			lindex16 	= vshiftr(weight16,  (unsigned char)4);
+			// clip(weight,light-512,light+512)
+			weight16[0] 	= vclip(weight16[0],(ushort16)vsub((short16)light16[0],(unsigned short)512),(ushort16)vadd((short16)light16[0] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+			weight16[1]  	= vclip(weight16[1],(ushort16)vsub((short16)light16[1],(unsigned short)512),(ushort16)vadd((short16)light16[1] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+			weight16[2]  	= vclip(weight16[2],(ushort16)vsub((short16)light16[2],(unsigned short)512),(ushort16)vadd((short16)light16[2] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+			weight16[3]  	= vclip(weight16[3],(ushort16)vsub((short16)light16[3],(unsigned short)512),(ushort16)vadd((short16)light16[3] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
 
-			inM 		= scale_table;		
-			vpld(inM, lindex16, v1, v4);// v1 is scale_table[lindex[k]], v4 is scale_table[lindex[k]+1]
 
-			weightLow16 = (uchar32)vand(weight16,(unsigned short )15); 
-			weightLow16 = (uchar32)vperm(weightLow16,vsub((uchar32)16,weightLow16),vconfig0);
+			// (weight - blacklevel*4) > 0,
+			vpr2[0]			= vcmp(gt,vsub(weight16[0],(ushort16)(blacklevel*4)),	0);  
+			vpr2[1] 		= vcmp(gt,vsub(weight16[1],(ushort16)(blacklevel*4)),	0);  
+			vpr2[2] 		= vcmp(gt,vsub(weight16[2],(ushort16)(blacklevel*4)),	0);  
+			vpr2[3] 		= vcmp(gt,vsub(weight16[3],(ushort16)(blacklevel*4)),	0);		
 
-			vacc0 		= (uint16)8;	
-			weight16 	= vmac3(splitsrc, psl, v4, v1, weightLow16, vacc0, (unsigned char)4);
-			vst(weight16,(ushort16*)ptmp5,vprMask); // vprMask handle with unalign in image board.
+
+			// choose the "weight - blacklevel*4" or "0" to weight
+			weight16[0] 	= (ushort16)vselect(vsub(weight16[0],(ushort16)(blacklevel*4)),	0 , vpr2[0] );  
+			weight16[1]  	= (ushort16)vselect(vsub(weight16[1],(ushort16)(blacklevel*4)),	0 , vpr2[1] );  
+			weight16[2]  	= (ushort16)vselect(vsub(weight16[2],(ushort16)(blacklevel*4)),	0 , vpr2[2] );  
+			weight16[3]  	= (ushort16)vselect(vsub(weight16[3],(ushort16)(blacklevel*4)),	0 , vpr2[3] );  
+		
+			// lindex = weight >> 4;
+			lindex16[0] 	= vshiftr(weight16[0],  (unsigned char)4);
+			lindex16[1] 	= vshiftr(weight16[1],  (unsigned char)4);
+			lindex16[2] 	= vshiftr(weight16[2],  (unsigned char)4);
+			lindex16[3] 	= vshiftr(weight16[3],  (unsigned char)4);
+
+			vpld((unsigned short*)scale_table , lindex16[0], v0, v1);// v0 is scale_table[lindex[k]], v1 is scale_table[lindex[k]+1]
+			vpld((unsigned short*)scale_table , lindex16[1], v2, v3);// v2 is scale_table[lindex[k]], v3 is scale_table[lindex[k]+1]
+			vpld((unsigned short*)scale_table , lindex16[2], v4, v5);// v4 is scale_table[lindex[k]], v5 is scale_table[lindex[k]+1]
+			vpld((unsigned short*)scale_table , lindex16[3], v6, v7);// v6 is scale_table[lindex[k]], v7 is scale_table[lindex[k]+1]
+
+			//  (weight & 15)
+			weightLow16[0] = (uchar32)vand(weight16[0],(unsigned short )15); 
+			weightLow16[1] = (uchar32)vand(weight16[1],(unsigned short )15); 
+			weightLow16[2] = (uchar32)vand(weight16[2],(unsigned short )15); 
+			weightLow16[3] = (uchar32)vand(weight16[3],(unsigned short )15); 
+
+			// (16 - (weight & 15)) || (weight & 15)  
+			weightLow16[0] = (uchar32)vperm(weightLow16[0],vsub((uchar32)16,weightLow16[0]),vconfig0);
+			weightLow16[1] = (uchar32)vperm(weightLow16[1],vsub((uchar32)16,weightLow16[1]),vconfig0);
+			weightLow16[2] = (uchar32)vperm(weightLow16[2],vsub((uchar32)16,weightLow16[2]),vconfig0);
+			weightLow16[3] = (uchar32)vperm(weightLow16[3],vsub((uchar32)16,weightLow16[3]),vconfig0);
+
+	
+			// weight = (scale_table[lindex] * (16 - (weight & 15)) + scale_table[lindex + 1] * (weight & 15) + 8) >> 4;
+			weight16[0] 	= vmac3(splitsrc, psl, v1, v0, weightLow16[0], (uint16)8, (unsigned char)4);
+			weight16[1] 	= vmac3(splitsrc, psl, v3, v2, weightLow16[1], (uint16)8, (unsigned char)4);
+			weight16[2] 	= vmac3(splitsrc, psl, v5, v4, weightLow16[2], (uint16)8, (unsigned char)4);
+			weight16[3] 	= vmac3(splitsrc, psl, v7, v6, weightLow16[3], (uint16)8, (unsigned char)4);
+
+	 		// read pixel_in                       
+			v16     = vpld(ptmp1,     offset_in);      
+			v17     = vpld((ptmp1+16),offset_in); 
+			v18     = vpld((ptmp1+32),offset_in); 
+			v19     = vpld((ptmp1+48),offset_in); 
+
+			// *pixel_in -= blacklevel*2, if >0, copy; else 0;
+			v16		= vsubsat(v16,	(unsigned short)(blacklevel*2));// & vpr3[0]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
+			v17 	= vsubsat(v17,	(unsigned short)(blacklevel*2));// & vpr3[1]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
+			v18 	= vsubsat(v18,	(unsigned short)(blacklevel*2));// & vpr3[2]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
+			v19 	= vsubsat(v19,	(unsigned short)(blacklevel*2));// & vpr3[3]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
+		
+
+			// *(pGainMat + y*w + x) = (RK_U32)weight; 
+			vst(weight16[0],(ushort16*)ptmp5,	  vprMask); // vprMask handle with unalign in image board.
+			vst(weight16[1],(ushort16*)(ptmp5+16),vprMask); // vprMask handle with unalign in image board.
+			vst(weight16[2],(ushort16*)(ptmp5+32),vprMask); // vprMask handle with unalign in image board.
+			vst(weight16[3],(ushort16*)(ptmp5+48),vprMask); // vprMask handle with unalign in image board.
+
+			// *pixel_out++ = clip10bit(((*pixel_in++) - blacklevel * 2)*weight / 1024 + blacklevel/4);
+			v0 		= vclip((ushort16)vmac(psl, v16, weight16[0], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023);// & vpr3[0];     
+			v1 		= vclip((ushort16)vmac(psl, v17, weight16[1], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023);// & vpr3[1];     
+			v2 		= vclip((ushort16)vmac(psl, v18, weight16[2], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023);// & vpr3[2];     
+			v3 		= vclip((ushort16)vmac(psl, v19, weight16[3], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023);// & vpr3[3];     
+
+			vst(v0,(ushort16*)ptmp3     ,	vprMask); // vprMask handle with unalign in image board.
+			vst(v1,(ushort16*)(ptmp3+16),	vprMask); // vprMask handle with unalign in image board.
+			vst(v2,(ushort16*)(ptmp3+32),	vprMask); // vprMask handle with unalign in image board.
+			vst(v3,(ushort16*)(ptmp3+48),	vprMask); // vprMask handle with unalign in image board.
+
+			ptmp1 += VECC_ONCE_LEN;
+			ptmp3 += VECC_ONCE_LEN;
+			ptmp5 += VECC_ONCE_LEN;
+			
 		#if DEBUG_VECC
-			ret += check_ushort16_vecc_result(weight,  weight16, 16);
+			ret += check_ushort16_vecc_result(weight+0,   weight16[0], 16);
+			ret += check_ushort16_vecc_result(weight+16,  weight16[1], 16);
+			ret += check_ushort16_vecc_result(weight+32,  weight16[2], 16);
+			ret += check_ushort16_vecc_result(weight+48,  weight16[3], 16);
 			if (ret){
-				PRINT_C_GROUP("weight",weight,0, 16,stderr);
-				PRINT_CEVA_VRF("weight16",weight16,stderr);
+				PRINT_C_GROUP("weight",weight, 0, 16,stderr);
+				PRINT_CEVA_VRF("weight16",weight16[0],stderr);
 			}
-		#endif		
-			set_short16(inN , 0);
-			v1 			= vpld(ptmp1,inN);
-			vpr0 		= vcmp(gt,v1,const16_2);
-			v1 			= (ushort16)vsub(v1,const16_2); // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-			v1 			= (ushort16)vmac(psl, v1, weight16, const16_4, (unsigned char)10);
-			v1 			= vselect(v1, const16_3, vpr0); 
-			v1 			= vclip(v1, (ushort16) 0, (ushort16) 1023);
-			vst(v1,(ushort16*)ptmp3,vprMask); // vprMask handle with unalign in image board.
-		#if DEBUG_VECC
-			ret += check_wdr_result(ptmp2 - 16,  ptmp3, 16, 1);	
+			
+			ret += check_wdr_result(ptmp2 - VECC_ONCE_LEN,  ptmp3 - VECC_ONCE_LEN, 64, 1);	
 			if (ret){
 				PRINT_CEVA_VRF("out",v1,stderr);
 			}	
+			assert(ret == 0);
 		#endif
-			//if ((x + 16) > w)
-			//{
-			//	ptmp1  += (w-x);
-			//	ptmp3 += (w-x);
-			//}
-			//else
-			{
-				ptmp1 += 16;
-				ptmp3 += 16;
-				ptmp5 += 16;
-			}
-			
+
 		}
 	}
-
-
+#ifdef __XM4__
+	PROFILER_END();
+#endif
 	ptmp0 = pixel_out;
 	ptmp1 = pixel_out_align;
 	//ptmp2 = (RK_U16*)pGainMat;
