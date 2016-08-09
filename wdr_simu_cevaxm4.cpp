@@ -98,7 +98,11 @@ void wdr_simu_cevaxm4()
 
 	unsigned short 		bi0,bi1;
 	short16 			bi0_vecc[VECC_GROUP_SIZE],bi1_vecc[VECC_GROUP_SIZE];
-	unsigned short 		vpr0[VECC_GROUP_SIZE],vpr1[VECC_GROUP_SIZE],vpr2[VECC_GROUP_SIZE],vpr3[VECC_GROUP_SIZE],vprMask = 0xffff;
+	unsigned short 		vpr0[VECC_GROUP_SIZE];
+	unsigned short 		vpr1[VECC_GROUP_SIZE];
+	unsigned short 		vpr2[VECC_GROUP_SIZE];
+	unsigned short 		vpr3[VECC_GROUP_SIZE];
+	unsigned short 		vprMask = 0xffff,vprRightMask = 0xffff, vprYinterMask = 0xffff;
 	uchar32				biBase,bifactor_xAxis[VECC_GROUP_SIZE];	
 	set_char32(biBase,0);		
 
@@ -157,6 +161,20 @@ void wdr_simu_cevaxm4()
 #endif
 	for (y = 0; y < h; y++)
 	{
+	/*
+		if ((y & MAX_BIT_V_MINUS1)==0)
+			vprYinterMask = 0x0;
+		
+		bi1 	= (y & MAX_BIT_V_MINUS1);
+		bi0 	= (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1));
+		offset 	= (y >> SHIFT_BIT)*sw;
+	*/
+
+
+
+
+
+		
 		for (x = 0; x < wStride16; x+=VECC_ONCE_LEN) // input/output 16 pixel result.
 		//DSP_CEVA_UNROLL(8)
 		{
@@ -164,6 +182,14 @@ void wdr_simu_cevaxm4()
 			/* x+256 for one loop */
 			if ((x & MAX_BIT_V_MINUS1) == 0)// the first 2D block (x,y) do once.
 			{
+				if ((y & MAX_BIT_V_MINUS1)==0)
+					vprYinterMask = 0x0;
+				
+				bi1 	= (y & MAX_BIT_V_MINUS1);
+				bi0 	= (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1));
+				offset 	= (y >> SHIFT_BIT)*sw;
+
+				vprRightMask = 0xfffe;
 			#if DEBUG_VECC
 				for (i = 0; i < 9; i++)
 				{
@@ -175,28 +201,23 @@ void wdr_simu_cevaxm4()
 						+ pweight_vecc[i][(y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT) + sw + 1] * (y & MAX_BIT_V_MINUS1)) / MAX_BIT_VALUE;
 				}
 			#endif
-				offset 		 = (y >> SHIFT_BIT)*sw + (x >> SHIFT_BIT);				
+				offset 		+= (x >> SHIFT_BIT);				
 				inN0 		 = vadd(ptrChan,(short16)offset);
 				inN1 		 = vadd(inN0,	(short16)sw);				
 				vpld((unsigned short*)pweight_vecc[0], inN0, v0, v2);
 				vpld((unsigned short*)pweight_vecc[0], inN1, v1, v3);
 
 
-				/* DO interpolation, left by v0/v1, right by v2/v3, when y is zero, do copy v0/v2 only rather than vmac3 */
-				if ((y & MAX_BIT_V_MINUS1)==0)
-				{
-					v0 = v0;
-					v2 = v2;
-				}
-				else 
-				{					
-					bi1 	= (y & MAX_BIT_V_MINUS1);
-					bi0 	= (MAX_BIT_VALUE - (y & MAX_BIT_V_MINUS1));
-					v0 		= vmac3(psl, v0, bi0, v1, bi1, (uint16) 0, (unsigned char)SHIFT_BIT);
-					v2 		= vmac3(psl, v2, bi0, v3, bi1, (uint16) 0, (unsigned char)SHIFT_BIT);
-				}
+				/* DO interpolation, left by v0/v1, right by v2/v3, when y is zero, 
+					do copy v0/v2 only rather than vmac3 */
+				
+				v0 		= vmac3(psl, v0, bi0, v1, bi1, (uint16) 0, (unsigned char)SHIFT_BIT) & vprYinterMask;
+				v2 		= vmac3(psl, v2, bi0, v3, bi1, (uint16) 0, (unsigned char)SHIFT_BIT) & vprYinterMask;
+				
 				vst(v0,(ushort16*)left_vecc,0x1ff); // store 9 points.
  				vst(v2,(ushort16*)right_vecc,0x1ff); // store 9 points.
+
+				
  			#if DEBUG_VECC			
 				ret  = check_ushort16_vecc_result(left,  v0, 9);
 				ret += check_ushort16_vecc_result(right, v2, 9);
@@ -232,6 +253,7 @@ void wdr_simu_cevaxm4()
 
 			}
 		#endif
+			// light[k] 	= plight[y*w + x + k];
 			light16[0]  	= *(ushort16*)&plight[y*w + x];
 			light16[1]  	= *(ushort16*)&plight[y*w + x + 16];
 			light16[2]  	= *(ushort16*)&plight[y*w + x + 32];
@@ -242,6 +264,8 @@ void wdr_simu_cevaxm4()
 			light16[6]  	= *(ushort16*)&plight[y*w + x + 96];
 			light16[7]  	= *(ushort16*)&plight[y*w + x + 112];
 		#endif	
+
+			// light[k]>16*1023
 			light16[0]  	= (ushort16)vcmpmov(lt, light16[0], (ushort16)16*1023);
 			light16[1]  	= (ushort16)vcmpmov(lt, light16[1], (ushort16)16*1023);
 			light16[2]  	= (ushort16)vcmpmov(lt, light16[2], (ushort16)16*1023);
@@ -252,6 +276,8 @@ void wdr_simu_cevaxm4()
 			light16[6]  	= (ushort16)vcmpmov(lt, light16[6], (ushort16)16*1023);
 			light16[7]  	= (ushort16)vcmpmov(lt, light16[7], (ushort16)16*1023);
 		#endif
+
+			// lindex[k]  	= light[k] >> 11;
 			lindex16[0] 	= vshiftr(light16[0], (unsigned char) 11);
 			lindex16[1] 	= vshiftr(light16[1], (unsigned char) 11);
 			lindex16[2] 	= vshiftr(light16[2], (unsigned char) 11);
@@ -261,7 +287,10 @@ void wdr_simu_cevaxm4()
 			lindex16[5] 	= vshiftr(light16[5], (unsigned char) 11);
 			lindex16[6] 	= vshiftr(light16[6], (unsigned char) 11);
 			lindex16[7] 	= vshiftr(light16[7], (unsigned char) 11);
-		#endif		
+		#endif	
+
+			// load left[lindex[k]],left[lindex[k]+1]
+			// load right[lindex[k]],left[lindex[k]+1]
 			vpld((unsigned short*)left_vecc,  lindex16[0], v0, v1);
 			vpld((unsigned short*)right_vecc, lindex16[0], v2, v3);
 
@@ -274,10 +303,10 @@ void wdr_simu_cevaxm4()
 			vpld((unsigned short*)left_vecc,  lindex16[3], v12, v13);
 			vpld((unsigned short*)right_vecc, lindex16[3], v14, v15);
 
-
+		#if VECC_16
 			vpld((unsigned short*)left_vecc,  lindex16[4], v16, v17);
 			vpld((unsigned short*)right_vecc, lindex16[4], v18, v19);
-		#if VECC_16
+		
 			vpld((unsigned short*)left_vecc,  lindex16[5], v20, v21);
 			vpld((unsigned short*)right_vecc, lindex16[5], v22, v23);
 
@@ -287,7 +316,7 @@ void wdr_simu_cevaxm4()
 			vpld((unsigned short*)left_vecc,  lindex16[7], v28, v29);
 			vpld((unsigned short*)right_vecc, lindex16[7], v30, v31);
 		#endif	
-
+			// (MAX_BIT_VALUE - ((x + k) & MAX_BIT_V_MINUS1)) || (x + k) & MAX_BIT_V_MINUS1)
 			bifactor_xAxis[0] = (uchar32)vselect(vsub(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
 			bifactor_xAxis[1] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 16)&MAX_BIT_V_MINUS1)), 
@@ -306,8 +335,11 @@ void wdr_simu_cevaxm4()
 			bifactor_xAxis[7] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 112)&MAX_BIT_V_MINUS1)), 
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
 		#endif
+		
+			// char <= 255, so 256 is overflow, need do speical.
+			// v0 the first unit do copy v0[0] when "0 == (x&MAX_BIT_V_MINUS1) "
 
-			v0 = vmac3(splitsrc, psl, v0, v2, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT);
+			v0 = vmac3(splitsrc, psl, v0, v2, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT) & vprRightMask;
 			v1 = vmac3(splitsrc, psl, v1, v3, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v2 = vmac3(splitsrc, psl, v4, v6, bifactor_xAxis[1], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v3 = vmac3(splitsrc, psl, v5, v7, bifactor_xAxis[1], (uint16) 0, (unsigned char)SHIFT_BIT);
@@ -329,12 +361,8 @@ void wdr_simu_cevaxm4()
 			v23 = vmac3(splitsrc, psl, v29, v31, bifactor_xAxis[7], (uint16) 0, (unsigned char)SHIFT_BIT);
 		#endif
 
-			// char <= 255, so 256 is overflow, need do speical.
-			//if ((x & MAX_BIT_V_MINUS1)==0){
-			//	//v6[0] = v1[0];
-			//	//v7[0] = v4[0];
-			//}
-
+			
+			//weight[k] 	= (weight1[k]*(2048 - (light[k] & 2047)) + weight2[k]*(light[k]  & 2047)) / 2048;
 			bi1_vecc[0] = vand(light16[0], 				(unsigned short)2047);
 			bi1_vecc[1] = vand(light16[1], 				(unsigned short)2047);
 			bi1_vecc[2] = vand(light16[2], 				(unsigned short)2047);
@@ -592,17 +620,7 @@ void wdr_simu_cevaxm4()
 			weight16[7] 	= vmac3(splitsrc, psl, v15, v14, weightLow16[7], (uint16)8, (unsigned char)4);
 		#endif
 
-			// read pixel_in
-			v16 	= vpld(ptmp1,(short16)0);
-			v17 	= vpld((ptmp1+16),(short16)0);
-			v18 	= vpld((ptmp1+32),(short16)0);
-			v19 	= vpld((ptmp1+48),(short16)0);
-		#if VECC_16
-			v20 	= vpld((ptmp1+64),(short16)0);
-			v21 	= vpld((ptmp1+80),(short16)0);
-			v22 	= vpld((ptmp1+96),(short16)0);
-			v23 	= vpld((ptmp1+112),(short16)0);
-		#endif
+
 
 			// *pixel_in > blacklevel*2
 			vpr3[0]			= vcmp(gt,v16,	const16mpy2);

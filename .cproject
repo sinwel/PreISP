@@ -26,7 +26,7 @@
 								<option id="xm4.compiler.preprocessor.definitions.-D.234830571" name="Defined symbols (-D)" superClass="xm4.compiler.preprocessor.definitions.-D" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__XM4__"/>
 								</option>
-								<option id="xm4.compiler.general.-save-temps.1219190731" superClass="xm4.compiler.general.-save-temps" value="true" valueType="boolean"/>
+								<option id="xm4.compiler.general.-save-temps.1219190731" name="Save all temporary files (-save-temps)" superClass="xm4.compiler.general.-save-temps" value="true" valueType="boolean"/>
 								<inputType id="com.ceva.toolchain.xm4.compiler.c.input.1304626020" superClass="com.ceva.toolchain.xm4.compiler.c.input"/>
 								<inputType id="com.ceva.toolchain.xm4.compiler.cpp.input.398438953" superClass="com.ceva.toolchain.xm4.compiler.cpp.input"/>
 							</tool>
