@@ -15,6 +15,7 @@
 **   
 **	version 1.1 	add profiler and 1.7 cycle/pixel.
 **
+**	version 2.0 	1.55 cycle/pixel, verify passed.
 **
 ** Copyright 2016, rockchip.
 **
