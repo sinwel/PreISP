@@ -506,10 +506,10 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 	short16 			ptrChan = *(short16*)ptrChunks;
 	unsigned short 		bi0,bi1;
 	short16 			bi0_vecc[VECC_GROUP_SIZE],bi1_vecc[VECC_GROUP_SIZE];
-	unsigned short 		vpr0[VECC_GROUP_SIZE];
-	unsigned short 		vpr1[VECC_GROUP_SIZE];
+	//unsigned short 		vpr0[VECC_GROUP_SIZE];
+	//unsigned short 		vpr1[VECC_GROUP_SIZE];
 	unsigned short 		vpr2[VECC_GROUP_SIZE];
-	unsigned short 		vpr3[VECC_GROUP_SIZE];
+	//unsigned short 		vpr3[VECC_GROUP_SIZE];
 	unsigned short 		vprMask = 0xffff,vprRightMask = 0xffff, vprYinterMask = 0xffff;
 	uchar32				biBase,bifactor_xAxis[VECC_GROUP_SIZE];	
 	set_char32(biBase,0);		
@@ -772,6 +772,9 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 		}
 	}
 
+//#ifdef __XM4__
+//	PROFILER_START(h, w);
+//#endif
 
 
 	for (y = 0; y < h; y++)
@@ -1121,9 +1124,9 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 
 		}
 	}
-#ifdef __XM4__
-	PROFILER_END();
-#endif
+//#ifdef __XM4__
+//	PROFILER_END();
+//#endif
 	ptmp0 = pixel_out;
 	ptmp1 = pixel_out_align;
 	//ptmp2 = (RK_U16*)pGainMat;

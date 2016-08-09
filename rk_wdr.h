@@ -42,7 +42,7 @@
 #ifdef  WIN32
 #define DEBUG_VECC		    1
 #else
-#define DEBUG_VECC		    0
+#define DEBUG_VECC		    1
 #endif
 #ifdef  XM4
 #define VECC_SIMU_DEBUG

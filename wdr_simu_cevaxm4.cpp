@@ -57,7 +57,7 @@ void wdr_simu_cevaxm4()
 
 	
 	int 				blacklevel=256;
-	ushort16* 			plight16[VECC_GROUP_SIZE];
+	//ushort16* 			plight16[VECC_GROUP_SIZE];
 	ushort16 			light16[VECC_GROUP_SIZE],weight16[VECC_GROUP_SIZE],resi16[VECC_GROUP_SIZE];
 	
 	uchar32 			weightLow16[VECC_GROUP_SIZE];
@@ -100,10 +100,10 @@ void wdr_simu_cevaxm4()
 
 	unsigned short 		bi0,bi1;
 	short16 			bi0_vecc[VECC_GROUP_SIZE],bi1_vecc[VECC_GROUP_SIZE];
-	unsigned short 		vpr0[VECC_GROUP_SIZE];
-	unsigned short 		vpr1[VECC_GROUP_SIZE];
+	//unsigned short 		vpr0[VECC_GROUP_SIZE];
+	//unsigned short 		vpr1[VECC_GROUP_SIZE];
 	unsigned short 		vpr2[VECC_GROUP_SIZE];
-	unsigned short 		vpr3[VECC_GROUP_SIZE];
+	//unsigned short 		vpr3[VECC_GROUP_SIZE];
 	unsigned short 		vprMask = 0xffff,vprRightMask = 0xffff, vprYinterMask = 0xffff;
 	uchar32				biBase,bifactor_xAxis[VECC_GROUP_SIZE];	
 	set_char32(biBase,0);		
