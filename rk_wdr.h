@@ -39,21 +39,24 @@
 #define MAX_BIT_V_MINUS1 	((1<<SHIFT_BIT) - 1)
 #define SPLIT_SIZE 			MAX_BIT_VALUE
 
-
+#ifdef  WIN32
+#define DEBUG_VECC		    1
+#else
 #define DEBUG_VECC		    0
+#endif
 #ifdef  XM4
 #define VECC_SIMU_DEBUG
 #endif
 
 #define WDR_WEIGHT_STRIDE   256  
 #ifdef WIN32
-#define PRINT_C_GROUP(namestr,var,num,fp,...) \
+#define PRINT_C_GROUP(namestr,var,start_pos,num,fp,...) \
     {\
         if (fp) \
         fprintf(fp,"[%s]: ",namestr);\
         else \
         fprintf(stderr,"[%s]: ",namestr); \
-        for (int elem = 0; elem < num; elem++) \
+        for (int elem = start_pos; elem < (start_pos+num); elem++) \
         { \
             if (fp) \
                 fprintf(fp,"0x%04x ",var[elem]);\
@@ -122,7 +125,7 @@ void set_char32(uchar32 &data, int offset);
 
 void set_short16(short16 &data, int offset);
 
-
+RK_U16 clip16bit_ceva (RK_S16 value, RK_S16 min_V, RK_S16 max_V);
 //////////////////////////////////////////////////////////////////////////
 
 

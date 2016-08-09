@@ -884,10 +884,10 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 			ret += check_ushort16_vecc_result(weight1,  v6, 16);
 			ret += check_ushort16_vecc_result(weight2,  v7, 16);
 			if (ret){
-				PRINT_C_GROUP("w1",weight1,16,stderr);
+				PRINT_C_GROUP("w1",weight1,0, 16,stderr);
 				PRINT_CEVA_VRF("v6",v6,stderr);
 				
-				PRINT_C_GROUP("w2",weight2,16,stderr);
+				PRINT_C_GROUP("w2",weight2,0, 16,stderr);
 				PRINT_CEVA_VRF("v7",v7,stderr);
 			}
 			assert(ret == 0);
@@ -930,12 +930,12 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 						weight = light+512;
 				
 				*/
-				weight = clip16bit_ceva(weight, light-512, light+512);
+				weight[k] = clip16bit_ceva(weight[k], light[k]-512, light[k]+512);
 				
 				if((weight[k] - blacklevel*4) > 0)
 					weight[k]  = weight[k] - blacklevel*4;
 				else
-					weight[k]  = 0
+					weight[k]  = 0;
 			#endif
 				
 				lindex[k] = weight[k] >> 4;
@@ -979,7 +979,7 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 		#if DEBUG_VECC
 			ret += check_ushort16_vecc_result(weight,  weight16, 16);
 			if (ret){
-				PRINT_C_GROUP("weight",weight,16,stderr);
+				PRINT_C_GROUP("weight",weight,0, 16,stderr);
 				PRINT_CEVA_VRF("weight16",weight16,stderr);
 			}
 		#endif		
