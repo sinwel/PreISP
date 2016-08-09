@@ -310,6 +310,7 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			//light <<= 2;
 			weight = (weight1*(2048 - (light & 2047)) + weight2*(light & 2047)) / 2048;
 			
+		#if 0
 			if (abs(weight-light)>512)
 			{
 				if(light>weight)
@@ -317,11 +318,24 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 				else
 					weight = light+512;
 			}
-
-			if(weight>blacklevel*4)
+			
+		
+		
+			if(weight-blacklevel*4)
 				weight = weight-blacklevel*4;
 			else
 				weight = 0;
+		#else
+			if((light-512) > weight)
+					weight = light-512;
+			if((light+512) < weight)
+					weight = light+512;
+			
+			if((weight - blacklevel*4) > 0)
+				weight  = weight - blacklevel*4;
+			else
+				weight  = 0;
+		#endif
 			lindex = weight >> 4;
 			weight = (scale_table[lindex] * (16 - (weight & 15)) + scale_table[lindex + 1] * (weight & 15) + 8) >> 4;
 
@@ -874,6 +888,7 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 			/* x+16 for one loop */
 			for  ( k = 0 ; k < 16; k++ )
 			{
+			#if 0
 				if (abs(weight[k]-light[k])>512)
 				{
 					if(light[k]>weight[k])
@@ -882,12 +897,23 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 						weight[k] = light[k]+512;
 				}
 				
-				
+			
+			
 				if(weight[k]>blacklevel*4)
 					weight[k] = weight[k]-blacklevel*4;
 				else
 					weight[k] = 0;
-
+			#else
+				if((light[k]-512) > weight[k])
+						weight[k] = light[k]-512;
+				if((light[k]+512) < weight[k])
+						weight[k] = light[k]+512;
+				
+				if((weight[k] - blacklevel*4) > 0)
+					weight[k]  = weight[k] - blacklevel*4;
+				else
+					weight[k]  = 0
+			#endif
 				
 				lindex[k] = weight[k] >> 4;
 				// use lindex and weight to get final weight 
