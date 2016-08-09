@@ -13,6 +13,8 @@
 **  
 **	version 1.0 	have not add profiler.
 **   
+**	version 1.1 	add profiler and 1.7 cycle/pixel.
+**
 **
 ** Copyright 2016, rockchip.
 **
@@ -56,7 +58,7 @@ void wdr_simu_cevaxm4()
 	RK_U16				pweight_vecc[9][256] = {0};// actully is 17x13 = 221
 	RK_U16 				weight1[VECC_ONCE_LEN];
 	RK_U16 				weight2[VECC_ONCE_LEN];
-	RK_U16 				weight[VECC_ONCE_LEN];
+	RK_U16 				weight[VECC_ONCE_LEN],weight_bak[VECC_ONCE_LEN];
 	RK_U16 				lindex[VECC_ONCE_LEN];
 	RK_U16				scale_table[1025];
 
@@ -355,6 +357,7 @@ void wdr_simu_cevaxm4()
 			// x+VECC_ONCE_LEN for one loop 
 			for  ( k = 0 ; k < VECC_ONCE_LEN ; k++ )
 			{
+			#if 0
 				if (abs(weight[k]-light[k])>512)
 				{
 					if(light[k]>weight[k])
@@ -368,7 +371,24 @@ void wdr_simu_cevaxm4()
 					weight[k] = weight[k]-blacklevel*4;
 				else
 					weight[k] = 0;
+			#else
 
+				if((light-512) > weight)
+						weight = light-512;
+				if((light+512) < weight)
+						weight = light+512;
+				
+				
+				weight_bak = clip16bit_ceva(weight, light-512, light+512);
+				assert(weight==weight_bak);
+
+				if((weight - blacklevel*4) > 0)
+					weight  = weight - blacklevel*4;
+				else
+					weight  = 0;
+				//weight_bak = clip16bit_ceva(weight_bak - blacklevel*4, 0, abs(weight_bak - blacklevel*4));
+				//assert(weight==weight_bak);
+			#endif
 				
 				lindex[k] = weight[k] >> 4;
 				// use lindex and weight to get final weight 
@@ -390,7 +410,7 @@ void wdr_simu_cevaxm4()
 		
 			// -------------------------------------------------------------- // 
 
-
+			// clip(weight,light-512,light+512)
 			weight16[0] 	= vclip(weight16[0],(ushort16)vsub((short16)light16[0],(unsigned short)512),(ushort16)vadd((short16)light16[0] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
 			weight16[1]  	= vclip(weight16[1],(ushort16)vsub((short16)light16[1],(unsigned short)512),(ushort16)vadd((short16)light16[1] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
 			weight16[2]  	= vclip(weight16[2],(ushort16)vsub((short16)light16[2],(unsigned short)512),(ushort16)vadd((short16)light16[2] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
@@ -416,11 +436,8 @@ void wdr_simu_cevaxm4()
 			lindex16[2] 	= vshiftr(weight16[2],  (unsigned char)4);
 			lindex16[3] 	= vshiftr(weight16[3],  (unsigned char)4);
 
-
 			vpld((unsigned short*)scale_table , lindex16[0], v0, v1);// v0 is scale_table[lindex[k]], v1 is scale_table[lindex[k]+1]
 			vpld((unsigned short*)scale_table , lindex16[1], v2, v3);// v2 is scale_table[lindex[k]], v3 is scale_table[lindex[k]+1]
-
-
 			vpld((unsigned short*)scale_table , lindex16[2], v4, v5);// v4 is scale_table[lindex[k]], v5 is scale_table[lindex[k]+1]
 			vpld((unsigned short*)scale_table , lindex16[3], v6, v7);// v6 is scale_table[lindex[k]], v7 is scale_table[lindex[k]+1]
 
@@ -449,22 +466,11 @@ void wdr_simu_cevaxm4()
 			v18     = vpld((ptmp1+32),(short16)0); 
 			v19     = vpld((ptmp1+48),(short16)0); 
 
-			// *pixel_in > blacklevel*2
-			vpr3[0]			= vcmp(gt,v16,	const16mpy2);
-			vpr3[1] 		= vcmp(gt,v17,	const16mpy2);
-			vpr3[2] 		= vcmp(gt,v18,	const16mpy2);
-			vpr3[3] 		= vcmp(gt,v19,	const16mpy2);		
-			
+			// *pixel_in -= blacklevel*2
 			v16		= (ushort16)vsub(v16,	const16mpy2);// & vpr3[0]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
 			v17 	= (ushort16)vsub(v17,	const16mpy2);// & vpr3[1]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
 			v18 	= (ushort16)vsub(v18,	const16mpy2);// & vpr3[2]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
 			v19 	= (ushort16)vsub(v19,	const16mpy2);// & vpr3[3]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-	
-			// *pixel_in>blacklevel*2,False , *pixel_out++ = blacklevel/4;
-			v0 		= vselect(v16, const16div4, ~vpr3[0]);
-			v1 		= vselect(v17, const16div4, ~vpr3[1]);
-			v2 		= vselect(v18, const16div4, ~vpr3[2]);
-			v3 		= vselect(v19, const16div4, ~vpr3[3]);
 
 			// *(pGainMat + y*w + x) = (RK_U32)weight; 
 			vst(weight16[0],(ushort16*)ptmp5,	  vprMask); // vprMask handle with unalign in image board.
@@ -473,12 +479,12 @@ void wdr_simu_cevaxm4()
 			vst(weight16[3],(ushort16*)(ptmp5+48),vprMask); // vprMask handle with unalign in image board.
 
 			// *pixel_out++ = clip10bit(((*pixel_in++) - blacklevel * 2)*weight / 1024 + blacklevel/4);
-			v0 		= vclip((ushort16)vmac(psl, v16, weight16[0], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[0];     
-			v1 		= vclip((ushort16)vmac(psl, v17, weight16[1], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[1];     
-			v2 		= vclip((ushort16)vmac(psl, v18, weight16[2], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[2];     
-			v3 		= vclip((ushort16)vmac(psl, v19, weight16[3], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[3];     
+			v0 		= vclip((ushort16)vmac(psl, v16, weight16[0], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023);// & vpr3[0];     
+			v1 		= vclip((ushort16)vmac(psl, v17, weight16[1], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023);// & vpr3[1];     
+			v2 		= vclip((ushort16)vmac(psl, v18, weight16[2], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023);// & vpr3[2];     
+			v3 		= vclip((ushort16)vmac(psl, v19, weight16[3], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023);// & vpr3[3];     
 
-			vst(v0,(ushort16*)ptmp3,		vprMask); // vprMask handle with unalign in image board.
+			vst(v0,(ushort16*)ptmp3     ,	vprMask); // vprMask handle with unalign in image board.
 			vst(v1,(ushort16*)(ptmp3+16),	vprMask); // vprMask handle with unalign in image board.
 			vst(v2,(ushort16*)(ptmp3+32),	vprMask); // vprMask handle with unalign in image board.
 			vst(v3,(ushort16*)(ptmp3+48),	vprMask); // vprMask handle with unalign in image board.

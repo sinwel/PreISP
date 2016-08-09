@@ -21,7 +21,8 @@
 #include <assert.h>
 #include <vec-c.h>
 
-inline RK_U16  clip16bit_ceva (RK_U16 value, RK_U16 min_V, RK_U16 max_V)
+/*inline*/
+RK_U16 clip16bit_ceva (RK_S16 value, RK_S16 min_V, RK_S16 max_V)
 {
 
 	if(value < min_V)
@@ -286,7 +287,7 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 	RK_U16  left[9], right[9];
 	RK_U16 weight1;
 	RK_U16 weight2;
-	RK_U16 weight;
+	RK_U16 weight,weight_bak;
 	for (y = 0; y < h; y++)
 	{
 		for (x = 0; x < w; x++) // input/output 16 pixel result.
@@ -336,21 +337,23 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			else
 				weight = 0;
 		#else
-			/*
+			
 			if((light-512) > weight)
 					weight = light-512;
 			if((light+512) < weight)
 					weight = light+512;
 			
-			*/
-			weight = clip16bit_ceva(weight, light-512, light+512);
-	
+			
+			weight_bak = clip16bit_ceva(weight, light-512, light+512);
+			assert(weight==weight_bak);
+			weight_bak = clip16bit_ceva(weight_bak - blacklevel*4, 0, abs(weight_bak - blacklevel*4));
+
 			if((weight - blacklevel*4) > 0)
 				weight  = weight - blacklevel*4;
 			else
 				weight  = 0;
-			
-
+				
+			assert(weight==weight_bak);
 		#endif
 			lindex = weight >> 4;
 			weight = (scale_table[lindex] * (16 - (weight & 15)) + scale_table[lindex + 1] * (weight & 15) + 8) >> 4;
