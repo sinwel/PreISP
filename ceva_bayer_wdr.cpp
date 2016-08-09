@@ -21,7 +21,17 @@
 #include <assert.h>
 #include <vec-c.h>
 
+inline RK_U16  clip16bit_ceva (RK_U16 value, RK_U16 min_V, RK_U16 max_V)
+{
 
+	if(value < min_V)
+		value = min_V;
+	
+	if(value > max_V)
+		value = max_V;
+	
+	return value;
+}
 
 void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, int h, float max_scale, RK_U32* pGainMat, RK_F32 testParams_5) // 20160701
 {
@@ -326,15 +336,21 @@ void ceva_bayer_wdr(unsigned short *pixel_in, unsigned short *pixel_out, int w, 
 			else
 				weight = 0;
 		#else
+			/*
 			if((light-512) > weight)
 					weight = light-512;
 			if((light+512) < weight)
 					weight = light+512;
 			
+			*/
+			weight = clip16bit_ceva(weight, light-512, light+512);
+	
 			if((weight - blacklevel*4) > 0)
 				weight  = weight - blacklevel*4;
 			else
 				weight  = 0;
+			
+
 		#endif
 			lindex = weight >> 4;
 			weight = (scale_table[lindex] * (16 - (weight & 15)) + scale_table[lindex + 1] * (weight & 15) + 8) >> 4;
@@ -904,10 +920,14 @@ void wdr_cevaxm4_vecc(unsigned short *pixel_in,
 				else
 					weight[k] = 0;
 			#else
-				if((light[k]-512) > weight[k])
-						weight[k] = light[k]-512;
-				if((light[k]+512) < weight[k])
-						weight[k] = light[k]+512;
+				/*
+				if((light-512) > weight)
+						weight = light-512;
+				if((light+512) < weight)
+						weight = light+512;
+				
+				*/
+				weight = clip16bit_ceva(weight, light-512, light+512);
 				
 				if((weight[k] - blacklevel*4) > 0)
 					weight[k]  = weight[k] - blacklevel*4;

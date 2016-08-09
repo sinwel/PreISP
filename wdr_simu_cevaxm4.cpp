@@ -428,7 +428,7 @@ void wdr_simu_cevaxm4()
 		
 			// -------------------------------------------------------------- // 
 		
-		
+	#if 0	
 			//	if((light[k]-512) > weight[k])
 			vpr0[0] 		= vcmp(gt, vsub(light16[0],(unsigned short)512), (short16)weight16[0]);  
 			vpr0[1] 		= vcmp(gt, vsub(light16[1],(unsigned short)512), (short16)weight16[1]);  
@@ -471,8 +471,6 @@ void wdr_simu_cevaxm4()
 			weight16[6] 	= (ushort16)vselect(vsub((short16)light16[6],(unsigned short)512), weight16[6], vpr0[6]);       
 			weight16[7] 	= (ushort16)vselect(vsub((short16)light16[7],(unsigned short)512), weight16[7], vpr0[7]);       
 		
-			vpld((unsigned short*)scale_table , lindex16[4], v8, v9);// v0 is scale_table[lindex[k]], v1 is scale_table[lindex[k]+1]
-			vpld((unsigned short*)scale_table , lindex16[5], v10, v11);// v2 is scale_table[lindex[k]], v3 is scale_table[lindex[k]+1]
 		#endif
 			//			weight[k] = light[k]+512;
 			weight16[0] 	= (ushort16)vselect(vadd((short16)light16[0] ,(unsigned short)512), weight16[0] , vpr0[0] ); // weight = light+512 or // weight = light+512
@@ -485,6 +483,26 @@ void wdr_simu_cevaxm4()
 			weight16[6]  	= (ushort16)vselect(vadd((short16)light16[6] ,(unsigned short)512), weight16[6] , vpr0[6] ); // weight = light+512 or // weight = light+512
 			weight16[7]  	= (ushort16)vselect(vadd((short16)light16[7] ,(unsigned short)512), weight16[7] , vpr0[7] ); // weight = light+512 or // weight = light+512
 		#endif
+
+	#else
+			vpld((unsigned short*)scale_table , lindex16[0], v0, v1);// v0 is scale_table[lindex[k]], v1 is scale_table[lindex[k]+1]
+			vpld((unsigned short*)scale_table , lindex16[1], v2, v3);// v2 is scale_table[lindex[k]], v3 is scale_table[lindex[k]+1]
+
+
+			vpld((unsigned short*)scale_table , lindex16[2], v4, v5);// v4 is scale_table[lindex[k]], v5 is scale_table[lindex[k]+1]
+			vpld((unsigned short*)scale_table , lindex16[3], v6, v7);// v6 is scale_table[lindex[k]], v7 is scale_table[lindex[k]+1]
+
+			weight16[0] 	= vclip(weight16[0],(ushort16)vsub((short16)light16[0],(unsigned short)512),(ushort16)vadd((short16)light16[0] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+			weight16[1]  	= vclip(weight16[1],(ushort16)vsub((short16)light16[1],(unsigned short)512),(ushort16)vadd((short16)light16[1] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+			weight16[2]  	= vclip(weight16[2],(ushort16)vsub((short16)light16[2],(unsigned short)512),(ushort16)vadd((short16)light16[2] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+			weight16[3]  	= vclip(weight16[3],(ushort16)vsub((short16)light16[3],(unsigned short)512),(ushort16)vadd((short16)light16[3] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+		#if VECC_16
+			weight16[4] 	= vclip(weight16[4],(ushort16)vsub((short16)light16[4],(unsigned short)512),(ushort16)vadd((short16)light16[4] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+			weight16[5]  	= vclip(weight16[5],(ushort16)vsub((short16)light16[5],(unsigned short)512),(ushort16)vadd((short16)light16[5] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+			weight16[6]  	= vclip(weight16[6],(ushort16)vsub((short16)light16[6],(unsigned short)512),(ushort16)vadd((short16)light16[6] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+			weight16[7]  	= vclip(weight16[7],(ushort16)vsub((short16)light16[7],(unsigned short)512),(ushort16)vadd((short16)light16[7] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
+		#endif
+	#endif
 			// (weight - blacklevel*4) > 0,
 			vpr2[0]			= vcmp(gt,vsub(weight16[0],(ushort16)(blacklevel*4)),	0);  
 			vpr2[1] 		= vcmp(gt,vsub(weight16[1],(ushort16)(blacklevel*4)),	0);  
@@ -530,7 +548,8 @@ void wdr_simu_cevaxm4()
 			lindex16[5] 	= vshiftr(weight16[5],  (unsigned char)4);
 			lindex16[6] 	= vshiftr(weight16[6],  (unsigned char)4);
 			lindex16[7] 	= vshiftr(weight16[7],  (unsigned char)4);
-		
+			vpld((unsigned short*)scale_table , lindex16[4], v8, v9);// v0 is scale_table[lindex[k]], v1 is scale_table[lindex[k]+1]
+			vpld((unsigned short*)scale_table , lindex16[5], v10, v11);// v2 is scale_table[lindex[k]], v3 is scale_table[lindex[k]+1]
 			vpld((unsigned short*)scale_table , lindex16[6], v12, v13);// v4 is scale_table[lindex[k]], v5 is scale_table[lindex[k]+1]
 			vpld((unsigned short*)scale_table , lindex16[7], v14, v15);// v6 is scale_table[lindex[k]], v7 is scale_table[lindex[k]+1]
 		#endif
