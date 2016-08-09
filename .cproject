@@ -51,7 +51,8 @@
 							<option id="com.ceva.toolchain.xm4.exe.compiler.cpp.option.cycle_count_optimization_level.debug.584537852" name="Speed optimization level" superClass="com.ceva.toolchain.xm4.exe.compiler.cpp.option.cycle_count_optimization_level.debug" value="xm4.compiler.cycle_count_optimization_level.-O2" valueType="enumerated"/>
 							<option id="xm4.compiler.general.-save-temps.532492022" name="Save all temporary files (-save-temps)" superClass="xm4.compiler.general.-save-temps" value="true" valueType="boolean"/>
 							<option id="xm4.compiler.code_generation.-OPTunroll_times_max.491140653" name="Max loop unrolling factor" superClass="xm4.compiler.code_generation.-OPTunroll_times_max" value="" valueType="string"/>
-							<option id="com.ceva.toolchain.xm4.exe.compiler.cpp.option.debug_info.debug.1442632400" name="Generate debug info" superClass="com.ceva.toolchain.xm4.exe.compiler.cpp.option.debug_info.debug" value="xm4.compiler.debug.debug_info.empty" valueType="enumerated"/>
+							<option id="com.ceva.toolchain.xm4.exe.compiler.cpp.option.debug_info.debug.1442632400" name="Generate debug info" superClass="com.ceva.toolchain.xm4.exe.compiler.cpp.option.debug_info.debug" value="xm4.compiler.debug.debug_info.-g3" valueType="enumerated"/>
+							<option id="xm4.compiler.errors.assembler_warnings.2061575312" name="Assembler warnings" superClass="xm4.compiler.errors.assembler_warnings" value="xm4.compiler.errors.assembler_warnings.empty" valueType="enumerated"/>
 							<inputType id="com.ceva.toolchain.xm4.compiler.c.input.1074841843" superClass="com.ceva.toolchain.xm4.compiler.c.input"/>
 							<inputType id="com.ceva.toolchain.xm4.compiler.cpp.input.1363920116" superClass="com.ceva.toolchain.xm4.compiler.cpp.input"/>
 						</tool>

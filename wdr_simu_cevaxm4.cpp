@@ -258,36 +258,19 @@ void wdr_simu_cevaxm4()
 			light16[1]  	= *(ushort16*)&plight[y*w + x + 16];
 			light16[2]  	= *(ushort16*)&plight[y*w + x + 32];
 			light16[3]  	= *(ushort16*)&plight[y*w + x + 48];
-		#if VECC_16	
-			light16[4]  	= *(ushort16*)&plight[y*w + x + 64];
-			light16[5]  	= *(ushort16*)&plight[y*w + x + 80];
-			light16[6]  	= *(ushort16*)&plight[y*w + x + 96];
-			light16[7]  	= *(ushort16*)&plight[y*w + x + 112];
-		#endif	
 
 			// light[k]>16*1023
 			light16[0]  	= (ushort16)vcmpmov(lt, light16[0], (ushort16)16*1023);
 			light16[1]  	= (ushort16)vcmpmov(lt, light16[1], (ushort16)16*1023);
 			light16[2]  	= (ushort16)vcmpmov(lt, light16[2], (ushort16)16*1023);
 			light16[3]  	= (ushort16)vcmpmov(lt, light16[3], (ushort16)16*1023);
-		#if VECC_16	
-			light16[4]  	= (ushort16)vcmpmov(lt, light16[4], (ushort16)16*1023);
-			light16[5]  	= (ushort16)vcmpmov(lt, light16[5], (ushort16)16*1023);
-			light16[6]  	= (ushort16)vcmpmov(lt, light16[6], (ushort16)16*1023);
-			light16[7]  	= (ushort16)vcmpmov(lt, light16[7], (ushort16)16*1023);
-		#endif
 
 			// lindex[k]  	= light[k] >> 11;
 			lindex16[0] 	= vshiftr(light16[0], (unsigned char) 11);
 			lindex16[1] 	= vshiftr(light16[1], (unsigned char) 11);
 			lindex16[2] 	= vshiftr(light16[2], (unsigned char) 11);
 			lindex16[3] 	= vshiftr(light16[3], (unsigned char) 11);
-		#if VECC_16	
-			lindex16[4] 	= vshiftr(light16[4], (unsigned char) 11);
-			lindex16[5] 	= vshiftr(light16[5], (unsigned char) 11);
-			lindex16[6] 	= vshiftr(light16[6], (unsigned char) 11);
-			lindex16[7] 	= vshiftr(light16[7], (unsigned char) 11);
-		#endif	
+
 
 			// load left[lindex[k]],left[lindex[k]+1]
 			// load right[lindex[k]],left[lindex[k]+1]
@@ -303,19 +286,6 @@ void wdr_simu_cevaxm4()
 			vpld((unsigned short*)left_vecc,  lindex16[3], v12, v13);
 			vpld((unsigned short*)right_vecc, lindex16[3], v14, v15);
 
-		#if VECC_16
-			vpld((unsigned short*)left_vecc,  lindex16[4], v16, v17);
-			vpld((unsigned short*)right_vecc, lindex16[4], v18, v19);
-		
-			vpld((unsigned short*)left_vecc,  lindex16[5], v20, v21);
-			vpld((unsigned short*)right_vecc, lindex16[5], v22, v23);
-
-			vpld((unsigned short*)left_vecc,  lindex16[6], v24, v25);
-			vpld((unsigned short*)right_vecc, lindex16[6], v26, v27);
-
-			vpld((unsigned short*)left_vecc,  lindex16[7], v28, v29);
-			vpld((unsigned short*)right_vecc, lindex16[7], v30, v31);
-		#endif	
 			// (MAX_BIT_VALUE - ((x + k) & MAX_BIT_V_MINUS1)) || (x + k) & MAX_BIT_V_MINUS1)
 			bifactor_xAxis[0] = (uchar32)vselect(vsub(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
@@ -325,16 +295,6 @@ void wdr_simu_cevaxm4()
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
 			bifactor_xAxis[3] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 48)&MAX_BIT_V_MINUS1)), 
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
-		#if VECC_16
-			bifactor_xAxis[4] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 64)&MAX_BIT_V_MINUS1)), 
-									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
-			bifactor_xAxis[5] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 80)&MAX_BIT_V_MINUS1)), 
-									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
-			bifactor_xAxis[6] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 96)&MAX_BIT_V_MINUS1)), 
-									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
-			bifactor_xAxis[7] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 112)&MAX_BIT_V_MINUS1)), 
-									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
-		#endif
 		
 			// char <= 255, so 256 is overflow, need do speical.
 			// v0 the first unit do copy v0[0] when "0 == (x&MAX_BIT_V_MINUS1) "
@@ -343,23 +303,13 @@ void wdr_simu_cevaxm4()
 			v1 = vmac3(splitsrc, psl, v1, v3, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v2 = vmac3(splitsrc, psl, v4, v6, bifactor_xAxis[1], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v3 = vmac3(splitsrc, psl, v5, v7, bifactor_xAxis[1], (uint16) 0, (unsigned char)SHIFT_BIT);
-		#if VECC_16
+
+		
 			v4 = vmac3(splitsrc, psl, v8, v10, bifactor_xAxis[2], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v5 = vmac3(splitsrc, psl, v9, v11, bifactor_xAxis[2], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v6 = vmac3(splitsrc, psl, v12, v14, bifactor_xAxis[3], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v7 = vmac3(splitsrc, psl, v13, v15, bifactor_xAxis[3], (uint16) 0, (unsigned char)SHIFT_BIT);
-		#endif
-
-			v16 = vmac3(splitsrc, psl, v16, v18, bifactor_xAxis[4], (uint16) 0, (unsigned char)SHIFT_BIT);
-			v17 = vmac3(splitsrc, psl, v17, v19, bifactor_xAxis[4], (uint16) 0, (unsigned char)SHIFT_BIT);
-			v18 = vmac3(splitsrc, psl, v20, v22, bifactor_xAxis[5], (uint16) 0, (unsigned char)SHIFT_BIT);
-			v19 = vmac3(splitsrc, psl, v21, v23, bifactor_xAxis[5], (uint16) 0, (unsigned char)SHIFT_BIT);
-		#if VECC_16
-			v20 = vmac3(splitsrc, psl, v24, v26, bifactor_xAxis[6], (uint16) 0, (unsigned char)SHIFT_BIT);
-			v21 = vmac3(splitsrc, psl, v25, v27, bifactor_xAxis[6], (uint16) 0, (unsigned char)SHIFT_BIT);
-			v22 = vmac3(splitsrc, psl, v28, v30, bifactor_xAxis[7], (uint16) 0, (unsigned char)SHIFT_BIT);
-			v23 = vmac3(splitsrc, psl, v29, v31, bifactor_xAxis[7], (uint16) 0, (unsigned char)SHIFT_BIT);
-		#endif
+		 
 
 			
 			//weight[k] 	= (weight1[k]*(2048 - (light[k] & 2047)) + weight2[k]*(light[k]  & 2047)) / 2048;
@@ -367,22 +317,12 @@ void wdr_simu_cevaxm4()
 			bi1_vecc[1] = vand(light16[1], 				(unsigned short)2047);
 			bi1_vecc[2] = vand(light16[2], 				(unsigned short)2047);
 			bi1_vecc[3] = vand(light16[3], 				(unsigned short)2047);
-		#if VECC_16
-			bi1_vecc[4] = vand(light16[4], 				(unsigned short)2047);
-			bi1_vecc[5] = vand(light16[5], 				(unsigned short)2047);
-			bi1_vecc[6] = vand(light16[6], 				(unsigned short)2047);
-			bi1_vecc[7] = vand(light16[7], 				(unsigned short)2047);
-		#endif
+
 			bi0_vecc[0] = vsub((unsigned short)2048,     bi1_vecc[0]);
 			bi0_vecc[1] = vsub((unsigned short)2048,     bi1_vecc[1]);
 			bi0_vecc[2] = vsub((unsigned short)2048,     bi1_vecc[2]);
 			bi0_vecc[3] = vsub((unsigned short)2048,     bi1_vecc[3]);
-		#if VECC_16	
-			bi0_vecc[4] = vsub((unsigned short)2048,     bi1_vecc[4]);
-			bi0_vecc[5] = vsub((unsigned short)2048,     bi1_vecc[5]);
-			bi0_vecc[6] = vsub((unsigned short)2048,     bi1_vecc[6]);
-			bi0_vecc[7] = vsub((unsigned short)2048,     bi1_vecc[7]);
-		#endif
+
 			vacc0 	 	= vmpy(v0, bi0_vecc[0]);			
 			vacc1 	 	= vmpy(v2, bi0_vecc[1]);			
 			vacc2 	 	= vmpy(v4, bi0_vecc[2]);			
@@ -393,17 +333,7 @@ void wdr_simu_cevaxm4()
 			weight16[2] =  (ushort16)vmac(psl, v5, bi1_vecc[2], vacc2, (unsigned char)11);
 			weight16[3] =  (ushort16)vmac(psl, v7, bi1_vecc[3], vacc3, (unsigned char)11);
 
-		#if VECC_16
-			vacc0 	 	= vmpy(v16, bi0_vecc[4]);			
-			vacc1 	 	= vmpy(v18, bi0_vecc[5]);			
-			vacc2 	 	= vmpy(v20, bi0_vecc[6]);			
-			vacc3 	 	= vmpy(v22, bi0_vecc[7]);			
 
-			weight16[4] =  (ushort16)vmac(psl, v17, bi1_vecc[4], vacc0, (unsigned char)11);
-			weight16[5] =  (ushort16)vmac(psl, v19, bi1_vecc[5], vacc1, (unsigned char)11);
-			weight16[6] =  (ushort16)vmac(psl, v21, bi1_vecc[6], vacc2, (unsigned char)11);
-			weight16[7] =  (ushort16)vmac(psl, v23, bi1_vecc[7], vacc3, (unsigned char)11);
-		#endif
 			
 		#if DEBUG_VECC
 			ret += check_ushort16_vecc_result(weight1,  v6, 16);
@@ -459,228 +389,100 @@ void wdr_simu_cevaxm4()
 		#endif	
 		
 			// -------------------------------------------------------------- // 
-		
-	#if 0	
-			//	if((light[k]-512) > weight[k])
-			vpr0[0] 		= vcmp(gt, vsub(light16[0],(unsigned short)512), (short16)weight16[0]);  
-			vpr0[1] 		= vcmp(gt, vsub(light16[1],(unsigned short)512), (short16)weight16[1]);  
-			vpr0[2] 		= vcmp(gt, vsub(light16[2],(unsigned short)512), (short16)weight16[2]);  
-			vpr0[3] 		= vcmp(gt, vsub(light16[3],(unsigned short)512), (short16)weight16[3]);  
-		#if VECC_16
-			vpr0[4] 		= vcmp(gt, vsub(light16[4],(unsigned short)512), (short16)weight16[4]);  
-			vpr0[5] 		= vcmp(gt, vsub(light16[5],(unsigned short)512), (short16)weight16[5]);  
-			vpr0[6] 		= vcmp(gt, vsub(light16[6],(unsigned short)512), (short16)weight16[6]);  
-			vpr0[7] 		= vcmp(gt, vsub(light16[7],(unsigned short)512), (short16)weight16[7]);  
-		#endif				
-			//	if((light[k]+512) < weight[k])
-			vpr1[0] 		= vcmp(lt, vadd(light16[0],(unsigned short)512), (short16)weight16[0]);   
-			vpr1[1] 		= vcmp(lt, vadd(light16[1],(unsigned short)512), (short16)weight16[1]);   
-			vpr1[2] 		= vcmp(lt, vadd(light16[2],(unsigned short)512), (short16)weight16[2]);   
-			vpr1[3] 		= vcmp(lt, vadd(light16[3],(unsigned short)512), (short16)weight16[3]);   
-		#if VECC_16
-			vpr1[4] 		= vcmp(lt, vadd(light16[4],(unsigned short)512), (short16)weight16[4]);   
-			vpr1[5] 		= vcmp(lt, vadd(light16[5],(unsigned short)512), (short16)weight16[5]);   
-			vpr1[6] 		= vcmp(lt, vadd(light16[6],(unsigned short)512), (short16)weight16[6]);   
-			vpr1[7] 		= vcmp(lt, vadd(light16[7],(unsigned short)512), (short16)weight16[7]);   
-		#endif
-		
-			vpld((unsigned short*)scale_table , lindex16[0], v0, v1);// v0 is scale_table[lindex[k]], v1 is scale_table[lindex[k]+1]
-			vpld((unsigned short*)scale_table , lindex16[1], v2, v3);// v2 is scale_table[lindex[k]], v3 is scale_table[lindex[k]+1]
 
-
-			vpld((unsigned short*)scale_table , lindex16[2], v4, v5);// v4 is scale_table[lindex[k]], v5 is scale_table[lindex[k]+1]
-			vpld((unsigned short*)scale_table , lindex16[3], v6, v7);// v6 is scale_table[lindex[k]], v7 is scale_table[lindex[k]+1]
-				
-																																			   
-			//			weight[k] = light[k]-512;
-			weight16[0] 	= (ushort16)vselect(vsub((short16)light16[0],(unsigned short)512), weight16[0], vpr0[0]);       
-			weight16[1] 	= (ushort16)vselect(vsub((short16)light16[1],(unsigned short)512), weight16[1], vpr0[1]);       
-			weight16[2] 	= (ushort16)vselect(vsub((short16)light16[2],(unsigned short)512), weight16[2], vpr0[2]);       
-			weight16[3] 	= (ushort16)vselect(vsub((short16)light16[3],(unsigned short)512), weight16[3], vpr0[3]);       
-		#if VECC_16
-			weight16[4] 	= (ushort16)vselect(vsub((short16)light16[4],(unsigned short)512), weight16[4], vpr0[4]);       
-			weight16[5] 	= (ushort16)vselect(vsub((short16)light16[5],(unsigned short)512), weight16[5], vpr0[5]);       
-			weight16[6] 	= (ushort16)vselect(vsub((short16)light16[6],(unsigned short)512), weight16[6], vpr0[6]);       
-			weight16[7] 	= (ushort16)vselect(vsub((short16)light16[7],(unsigned short)512), weight16[7], vpr0[7]);       
-		
-		#endif
-			//			weight[k] = light[k]+512;
-			weight16[0] 	= (ushort16)vselect(vadd((short16)light16[0] ,(unsigned short)512), weight16[0] , vpr0[0] ); // weight = light+512 or // weight = light+512
-			weight16[1]  	= (ushort16)vselect(vadd((short16)light16[1] ,(unsigned short)512), weight16[1] , vpr0[1] ); // weight = light+512 or // weight = light+512
-			weight16[2]  	= (ushort16)vselect(vadd((short16)light16[2] ,(unsigned short)512), weight16[2] , vpr0[2] ); // weight = light+512 or // weight = light+512
-			weight16[3]  	= (ushort16)vselect(vadd((short16)light16[3] ,(unsigned short)512), weight16[3] , vpr0[3] ); // weight = light+512 or // weight = light+512
-		#if VECC_16
-			weight16[4] 	= (ushort16)vselect(vadd((short16)light16[4] ,(unsigned short)512), weight16[4] , vpr0[4] ); // weight = light+512 or // weight = light+512
-			weight16[5]  	= (ushort16)vselect(vadd((short16)light16[5] ,(unsigned short)512), weight16[5] , vpr0[5] ); // weight = light+512 or // weight = light+512
-			weight16[6]  	= (ushort16)vselect(vadd((short16)light16[6] ,(unsigned short)512), weight16[6] , vpr0[6] ); // weight = light+512 or // weight = light+512
-			weight16[7]  	= (ushort16)vselect(vadd((short16)light16[7] ,(unsigned short)512), weight16[7] , vpr0[7] ); // weight = light+512 or // weight = light+512
-		#endif
-
-	#else
-			vpld((unsigned short*)scale_table , lindex16[0], v0, v1);// v0 is scale_table[lindex[k]], v1 is scale_table[lindex[k]+1]
-			vpld((unsigned short*)scale_table , lindex16[1], v2, v3);// v2 is scale_table[lindex[k]], v3 is scale_table[lindex[k]+1]
-
-
-			vpld((unsigned short*)scale_table , lindex16[2], v4, v5);// v4 is scale_table[lindex[k]], v5 is scale_table[lindex[k]+1]
-			vpld((unsigned short*)scale_table , lindex16[3], v6, v7);// v6 is scale_table[lindex[k]], v7 is scale_table[lindex[k]+1]
 
 			weight16[0] 	= vclip(weight16[0],(ushort16)vsub((short16)light16[0],(unsigned short)512),(ushort16)vadd((short16)light16[0] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
 			weight16[1]  	= vclip(weight16[1],(ushort16)vsub((short16)light16[1],(unsigned short)512),(ushort16)vadd((short16)light16[1] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
 			weight16[2]  	= vclip(weight16[2],(ushort16)vsub((short16)light16[2],(unsigned short)512),(ushort16)vadd((short16)light16[2] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
 			weight16[3]  	= vclip(weight16[3],(ushort16)vsub((short16)light16[3],(unsigned short)512),(ushort16)vadd((short16)light16[3] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
-		#if VECC_16
-			weight16[4] 	= vclip(weight16[4],(ushort16)vsub((short16)light16[4],(unsigned short)512),(ushort16)vadd((short16)light16[4] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
-			weight16[5]  	= vclip(weight16[5],(ushort16)vsub((short16)light16[5],(unsigned short)512),(ushort16)vadd((short16)light16[5] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
-			weight16[6]  	= vclip(weight16[6],(ushort16)vsub((short16)light16[6],(unsigned short)512),(ushort16)vadd((short16)light16[6] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
-			weight16[7]  	= vclip(weight16[7],(ushort16)vsub((short16)light16[7],(unsigned short)512),(ushort16)vadd((short16)light16[7] ,(unsigned short)512)); // weight = light+512 or // weight = light+512
-		#endif
-	#endif
+
+
 			// (weight - blacklevel*4) > 0,
 			vpr2[0]			= vcmp(gt,vsub(weight16[0],(ushort16)(blacklevel*4)),	0);  
 			vpr2[1] 		= vcmp(gt,vsub(weight16[1],(ushort16)(blacklevel*4)),	0);  
 			vpr2[2] 		= vcmp(gt,vsub(weight16[2],(ushort16)(blacklevel*4)),	0);  
 			vpr2[3] 		= vcmp(gt,vsub(weight16[3],(ushort16)(blacklevel*4)),	0);		
-		#if VECC_16
-			vpr2[4]			= vcmp(gt,vsub(weight16[4],(ushort16)(blacklevel*4)),	0);  
-			vpr2[5] 		= vcmp(gt,vsub(weight16[5],(ushort16)(blacklevel*4)),	0);  
-			vpr2[6] 		= vcmp(gt,vsub(weight16[6],(ushort16)(blacklevel*4)),	0);  
-			vpr2[7] 		= vcmp(gt,vsub(weight16[7],(ushort16)(blacklevel*4)),	0);  
-		#endif
+
 
 			// choose the "weight - blacklevel*4" or "0" to weight
 			weight16[0] 	= (ushort16)vselect(vsub(weight16[0],(ushort16)(blacklevel*4)),	0 , vpr2[0] );  
 			weight16[1]  	= (ushort16)vselect(vsub(weight16[1],(ushort16)(blacklevel*4)),	0 , vpr2[1] );  
 			weight16[2]  	= (ushort16)vselect(vsub(weight16[2],(ushort16)(blacklevel*4)),	0 , vpr2[2] );  
 			weight16[3]  	= (ushort16)vselect(vsub(weight16[3],(ushort16)(blacklevel*4)),	0 , vpr2[3] );  
-		#if VECC_16
-			weight16[4] 	= (ushort16)vselect(vsub(weight16[4],(ushort16)(blacklevel*4)),	0 , vpr2[4] );  
-			weight16[5]  	= (ushort16)vselect(vsub(weight16[5],(ushort16)(blacklevel*4)),	0 , vpr2[5] );  
-			weight16[6]  	= (ushort16)vselect(vsub(weight16[6],(ushort16)(blacklevel*4)),	0 , vpr2[6] );  
-			weight16[7]  	= (ushort16)vselect(vsub(weight16[7],(ushort16)(blacklevel*4)),	0 , vpr2[7] );  
-		#endif
-		
-			v16		= (ushort16)vsub(v16,	const16mpy2) & vpr3[0]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-			v17 	= (ushort16)vsub(v17,	const16mpy2) & vpr3[1]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-			v18 	= (ushort16)vsub(v18,	const16mpy2) & vpr3[2]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-			v19 	= (ushort16)vsub(v19,	const16mpy2) & vpr3[3]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-		#if VECC_16
-			v20		= (ushort16)vsub(v20,	const16mpy2) & vpr3[4]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-			v21 	= (ushort16)vsub(v21,	const16mpy2) & vpr3[5]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-			v22 	= (ushort16)vsub(v22,	const16mpy2) & vpr3[6]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-			v23 	= (ushort16)vsub(v23,	const16mpy2) & vpr3[7]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
-		#endif
 		
 			// lindex = weight >> 4;
 			lindex16[0] 	= vshiftr(weight16[0],  (unsigned char)4);
 			lindex16[1] 	= vshiftr(weight16[1],  (unsigned char)4);
 			lindex16[2] 	= vshiftr(weight16[2],  (unsigned char)4);
 			lindex16[3] 	= vshiftr(weight16[3],  (unsigned char)4);
-		#if VECC_16
-			lindex16[4] 	= vshiftr(weight16[4],  (unsigned char)4);
-			lindex16[5] 	= vshiftr(weight16[5],  (unsigned char)4);
-			lindex16[6] 	= vshiftr(weight16[6],  (unsigned char)4);
-			lindex16[7] 	= vshiftr(weight16[7],  (unsigned char)4);
-			vpld((unsigned short*)scale_table , lindex16[4], v8, v9);// v0 is scale_table[lindex[k]], v1 is scale_table[lindex[k]+1]
-			vpld((unsigned short*)scale_table , lindex16[5], v10, v11);// v2 is scale_table[lindex[k]], v3 is scale_table[lindex[k]+1]
-			vpld((unsigned short*)scale_table , lindex16[6], v12, v13);// v4 is scale_table[lindex[k]], v5 is scale_table[lindex[k]+1]
-			vpld((unsigned short*)scale_table , lindex16[7], v14, v15);// v6 is scale_table[lindex[k]], v7 is scale_table[lindex[k]+1]
-		#endif
+
+
+			vpld((unsigned short*)scale_table , lindex16[0], v0, v1);// v0 is scale_table[lindex[k]], v1 is scale_table[lindex[k]+1]
+			vpld((unsigned short*)scale_table , lindex16[1], v2, v3);// v2 is scale_table[lindex[k]], v3 is scale_table[lindex[k]+1]
+
+
+			vpld((unsigned short*)scale_table , lindex16[2], v4, v5);// v4 is scale_table[lindex[k]], v5 is scale_table[lindex[k]+1]
+			vpld((unsigned short*)scale_table , lindex16[3], v6, v7);// v6 is scale_table[lindex[k]], v7 is scale_table[lindex[k]+1]
 
 			//  (weight & 15)
 			weightLow16[0] = (uchar32)vand(weight16[0],(unsigned short )15); 
 			weightLow16[1] = (uchar32)vand(weight16[1],(unsigned short )15); 
 			weightLow16[2] = (uchar32)vand(weight16[2],(unsigned short )15); 
 			weightLow16[3] = (uchar32)vand(weight16[3],(unsigned short )15); 
-		#if VECC_16
-			weightLow16[4] = (uchar32)vand(weight16[4],(unsigned short )15); 
-			weightLow16[5] = (uchar32)vand(weight16[5],(unsigned short )15); 
-			weightLow16[6] = (uchar32)vand(weight16[6],(unsigned short )15); 
-			weightLow16[7] = (uchar32)vand(weight16[7],(unsigned short )15); 
-		#endif
+
 			// (16 - (weight & 15)) || (weight & 15)  
 			weightLow16[0] = (uchar32)vperm(weightLow16[0],vsub((uchar32)16,weightLow16[0]),vconfig0);
 			weightLow16[1] = (uchar32)vperm(weightLow16[1],vsub((uchar32)16,weightLow16[1]),vconfig0);
 			weightLow16[2] = (uchar32)vperm(weightLow16[2],vsub((uchar32)16,weightLow16[2]),vconfig0);
 			weightLow16[3] = (uchar32)vperm(weightLow16[3],vsub((uchar32)16,weightLow16[3]),vconfig0);
-		#if VECC_16
-			weightLow16[4] = (uchar32)vperm(weightLow16[4],vsub((uchar32)16,weightLow16[4]),vconfig0);
-			weightLow16[5] = (uchar32)vperm(weightLow16[5],vsub((uchar32)16,weightLow16[5]),vconfig0);
-			weightLow16[6] = (uchar32)vperm(weightLow16[6],vsub((uchar32)16,weightLow16[6]),vconfig0);
-			weightLow16[7] = (uchar32)vperm(weightLow16[7],vsub((uchar32)16,weightLow16[7]),vconfig0);
-		#endif
+
+	
 			// weight = (scale_table[lindex] * (16 - (weight & 15)) + scale_table[lindex + 1] * (weight & 15) + 8) >> 4;
 			weight16[0] 	= vmac3(splitsrc, psl, v1, v0, weightLow16[0], (uint16)8, (unsigned char)4);
 			weight16[1] 	= vmac3(splitsrc, psl, v3, v2, weightLow16[1], (uint16)8, (unsigned char)4);
 			weight16[2] 	= vmac3(splitsrc, psl, v5, v4, weightLow16[2], (uint16)8, (unsigned char)4);
 			weight16[3] 	= vmac3(splitsrc, psl, v7, v6, weightLow16[3], (uint16)8, (unsigned char)4);
-		#if VECC_16
-			weight16[4] 	= vmac3(splitsrc, psl, v9, v8, weightLow16[4], (uint16)8, (unsigned char)4);
-			weight16[5] 	= vmac3(splitsrc, psl, v11, v10, weightLow16[5], (uint16)8, (unsigned char)4);
-			weight16[6] 	= vmac3(splitsrc, psl, v13, v12, weightLow16[6], (uint16)8, (unsigned char)4);
-			weight16[7] 	= vmac3(splitsrc, psl, v15, v14, weightLow16[7], (uint16)8, (unsigned char)4);
-		#endif
 
-
+	 		// read pixel_in                       
+			v16     = vpld(ptmp1,(short16)0);      
+			v17     = vpld((ptmp1+16),(short16)0); 
+			v18     = vpld((ptmp1+32),(short16)0); 
+			v19     = vpld((ptmp1+48),(short16)0); 
 
 			// *pixel_in > blacklevel*2
 			vpr3[0]			= vcmp(gt,v16,	const16mpy2);
 			vpr3[1] 		= vcmp(gt,v17,	const16mpy2);
 			vpr3[2] 		= vcmp(gt,v18,	const16mpy2);
-			vpr3[3] 		= vcmp(gt,v19,	const16mpy2);	
-		#if VECC_16
-			vpr3[4]			= vcmp(gt,v20,	const16mpy2);
-			vpr3[5] 		= vcmp(gt,v21,	const16mpy2);
-			vpr3[6] 		= vcmp(gt,v22,	const16mpy2);
-			vpr3[7] 		= vcmp(gt,v23,	const16mpy2);			
-		#endif
-		
+			vpr3[3] 		= vcmp(gt,v19,	const16mpy2);		
+			
+			v16		= (ushort16)vsub(v16,	const16mpy2);// & vpr3[0]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
+			v17 	= (ushort16)vsub(v17,	const16mpy2);// & vpr3[1]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
+			v18 	= (ushort16)vsub(v18,	const16mpy2);// & vpr3[2]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
+			v19 	= (ushort16)vsub(v19,	const16mpy2);// & vpr3[3]; // v1 > 0, need do ajdust pixel_out. else set to blacklevel/4.
+	
 			// *pixel_in>blacklevel*2,False , *pixel_out++ = blacklevel/4;
 			v0 		= vselect(v16, const16div4, ~vpr3[0]);
 			v1 		= vselect(v17, const16div4, ~vpr3[1]);
 			v2 		= vselect(v18, const16div4, ~vpr3[2]);
 			v3 		= vselect(v19, const16div4, ~vpr3[3]);
-		#if VECC_16
-			v4 		= vselect(v20, const16div4, ~vpr3[4]);
-			v5 		= vselect(v21, const16div4, ~vpr3[5]);
-			v6 		= vselect(v22, const16div4, ~vpr3[6]);
-			v7 		= vselect(v23, const16div4, ~vpr3[7]);
-		#endif
+
 			// *(pGainMat + y*w + x) = (RK_U32)weight; 
 			vst(weight16[0],(ushort16*)ptmp5,	  vprMask); // vprMask handle with unalign in image board.
 			vst(weight16[1],(ushort16*)(ptmp5+16),vprMask); // vprMask handle with unalign in image board.
 			vst(weight16[2],(ushort16*)(ptmp5+32),vprMask); // vprMask handle with unalign in image board.
 			vst(weight16[3],(ushort16*)(ptmp5+48),vprMask); // vprMask handle with unalign in image board.
-		#if VECC_16
 
-			vst(weight16[4],(ushort16*)(ptmp5+64),vprMask); // vprMask handle with unalign in image board.
-			vst(weight16[5],(ushort16*)(ptmp5+80),vprMask); // vprMask handle with unalign in image board.
-			vst(weight16[6],(ushort16*)(ptmp5+96),vprMask); // vprMask handle with unalign in image board.
-			vst(weight16[7],(ushort16*)(ptmp5+112),vprMask); // vprMask handle with unalign in image board.
-		#endif
 			// *pixel_out++ = clip10bit(((*pixel_in++) - blacklevel * 2)*weight / 1024 + blacklevel/4);
 			v0 		= vclip((ushort16)vmac(psl, v16, weight16[0], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[0];     
 			v1 		= vclip((ushort16)vmac(psl, v17, weight16[1], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[1];     
 			v2 		= vclip((ushort16)vmac(psl, v18, weight16[2], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[2];     
 			v3 		= vclip((ushort16)vmac(psl, v19, weight16[3], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[3];     
-		#if VECC_16
-
-			v4 		= vclip((ushort16)vmac(psl, v20, weight16[4], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[4];     
-			v5 		= vclip((ushort16)vmac(psl, v21, weight16[5], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[5];     
-			v6 		= vclip((ushort16)vmac(psl, v22, weight16[6], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[6];     
-			v7 		= vclip((ushort16)vmac(psl, v23, weight16[7], const16mpy256, (unsigned char)10), (ushort16) 0, (ushort16) 1023) & vpr3[7];     
-  		#endif
 
 			vst(v0,(ushort16*)ptmp3,		vprMask); // vprMask handle with unalign in image board.
 			vst(v1,(ushort16*)(ptmp3+16),	vprMask); // vprMask handle with unalign in image board.
 			vst(v2,(ushort16*)(ptmp3+32),	vprMask); // vprMask handle with unalign in image board.
 			vst(v3,(ushort16*)(ptmp3+48),	vprMask); // vprMask handle with unalign in image board.
-		#if VECC_16
 
-			vst(v4,(ushort16*)(ptmp3+64),	vprMask); // vprMask handle with unalign in image board.
-			vst(v5,(ushort16*)(ptmp3+80),	vprMask); // vprMask handle with unalign in image board.
-			vst(v6,(ushort16*)(ptmp3+96),	vprMask); // vprMask handle with unalign in image board.
-			vst(v7,(ushort16*)(ptmp3+112),	vprMask); // vprMask handle with unalign in image board.
-		#endif	
 			ptmp1 += VECC_ONCE_LEN;
 			ptmp3 += VECC_ONCE_LEN;
 			ptmp5 += VECC_ONCE_LEN;
