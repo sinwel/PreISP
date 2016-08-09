@@ -236,29 +236,32 @@ void wdr_simu_cevaxm4()
 			light16[1]  	= *(ushort16*)&plight[y*w + x + 16];
 			light16[2]  	= *(ushort16*)&plight[y*w + x + 32];
 			light16[3]  	= *(ushort16*)&plight[y*w + x + 48];
+		#if VECC_16	
 			light16[4]  	= *(ushort16*)&plight[y*w + x + 64];
 			light16[5]  	= *(ushort16*)&plight[y*w + x + 80];
 			light16[6]  	= *(ushort16*)&plight[y*w + x + 96];
 			light16[7]  	= *(ushort16*)&plight[y*w + x + 112];
-			
+		#endif	
 			light16[0]  	= (ushort16)vcmpmov(lt, light16[0], (ushort16)16*1023);
 			light16[1]  	= (ushort16)vcmpmov(lt, light16[1], (ushort16)16*1023);
 			light16[2]  	= (ushort16)vcmpmov(lt, light16[2], (ushort16)16*1023);
 			light16[3]  	= (ushort16)vcmpmov(lt, light16[3], (ushort16)16*1023);
+		#if VECC_16	
 			light16[4]  	= (ushort16)vcmpmov(lt, light16[4], (ushort16)16*1023);
 			light16[5]  	= (ushort16)vcmpmov(lt, light16[5], (ushort16)16*1023);
 			light16[6]  	= (ushort16)vcmpmov(lt, light16[6], (ushort16)16*1023);
 			light16[7]  	= (ushort16)vcmpmov(lt, light16[7], (ushort16)16*1023);
-
+		#endif
 			lindex16[0] 	= vshiftr(light16[0], (unsigned char) 11);
 			lindex16[1] 	= vshiftr(light16[1], (unsigned char) 11);
 			lindex16[2] 	= vshiftr(light16[2], (unsigned char) 11);
 			lindex16[3] 	= vshiftr(light16[3], (unsigned char) 11);
+		#if VECC_16	
 			lindex16[4] 	= vshiftr(light16[4], (unsigned char) 11);
 			lindex16[5] 	= vshiftr(light16[5], (unsigned char) 11);
 			lindex16[6] 	= vshiftr(light16[6], (unsigned char) 11);
 			lindex16[7] 	= vshiftr(light16[7], (unsigned char) 11);
-				
+		#endif		
 			vpld((unsigned short*)left_vecc,  lindex16[0], v0, v1);
 			vpld((unsigned short*)right_vecc, lindex16[0], v2, v3);
 
@@ -267,14 +270,14 @@ void wdr_simu_cevaxm4()
 
 			vpld((unsigned short*)left_vecc,  lindex16[2], v8, v9);
 			vpld((unsigned short*)right_vecc, lindex16[2], v10, v11);
-
+		
 			vpld((unsigned short*)left_vecc,  lindex16[3], v12, v13);
 			vpld((unsigned short*)right_vecc, lindex16[3], v14, v15);
 
 
 			vpld((unsigned short*)left_vecc,  lindex16[4], v16, v17);
 			vpld((unsigned short*)right_vecc, lindex16[4], v18, v19);
-
+		#if VECC_16
 			vpld((unsigned short*)left_vecc,  lindex16[5], v20, v21);
 			vpld((unsigned short*)right_vecc, lindex16[5], v22, v23);
 
@@ -283,7 +286,7 @@ void wdr_simu_cevaxm4()
 
 			vpld((unsigned short*)left_vecc,  lindex16[7], v28, v29);
 			vpld((unsigned short*)right_vecc, lindex16[7], v30, v31);
-		
+		#endif	
 
 			bifactor_xAxis[0] = (uchar32)vselect(vsub(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
@@ -293,7 +296,7 @@ void wdr_simu_cevaxm4()
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
 			bifactor_xAxis[3] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 48)&MAX_BIT_V_MINUS1)), 
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
-
+		#if VECC_16
 			bifactor_xAxis[4] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 64)&MAX_BIT_V_MINUS1)), 
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
 			bifactor_xAxis[5] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 80)&MAX_BIT_V_MINUS1)), 
@@ -302,29 +305,29 @@ void wdr_simu_cevaxm4()
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
 			bifactor_xAxis[7] = (uchar32)vselect(vsub(biBase,(uchar32)((x + 112)&MAX_BIT_V_MINUS1)), 
 									 vadd(biBase,(uchar32)(x&MAX_BIT_V_MINUS1)), 0x00ff);
-
+		#endif
 
 			v0 = vmac3(splitsrc, psl, v0, v2, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v1 = vmac3(splitsrc, psl, v1, v3, bifactor_xAxis[0], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v2 = vmac3(splitsrc, psl, v4, v6, bifactor_xAxis[1], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v3 = vmac3(splitsrc, psl, v5, v7, bifactor_xAxis[1], (uint16) 0, (unsigned char)SHIFT_BIT);
-
+		#if VECC_16
 			v4 = vmac3(splitsrc, psl, v8, v10, bifactor_xAxis[2], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v5 = vmac3(splitsrc, psl, v9, v11, bifactor_xAxis[2], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v6 = vmac3(splitsrc, psl, v12, v14, bifactor_xAxis[3], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v7 = vmac3(splitsrc, psl, v13, v15, bifactor_xAxis[3], (uint16) 0, (unsigned char)SHIFT_BIT);
-
+		#endif
 
 			v16 = vmac3(splitsrc, psl, v16, v18, bifactor_xAxis[4], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v17 = vmac3(splitsrc, psl, v17, v19, bifactor_xAxis[4], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v18 = vmac3(splitsrc, psl, v20, v22, bifactor_xAxis[5], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v19 = vmac3(splitsrc, psl, v21, v23, bifactor_xAxis[5], (uint16) 0, (unsigned char)SHIFT_BIT);
-
+		#if VECC_16
 			v20 = vmac3(splitsrc, psl, v24, v26, bifactor_xAxis[6], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v21 = vmac3(splitsrc, psl, v25, v27, bifactor_xAxis[6], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v22 = vmac3(splitsrc, psl, v28, v30, bifactor_xAxis[7], (uint16) 0, (unsigned char)SHIFT_BIT);
 			v23 = vmac3(splitsrc, psl, v29, v31, bifactor_xAxis[7], (uint16) 0, (unsigned char)SHIFT_BIT);
-
+		#endif
 
 			// char <= 255, so 256 is overflow, need do speical.
 			//if ((x & MAX_BIT_V_MINUS1)==0){
@@ -336,21 +339,22 @@ void wdr_simu_cevaxm4()
 			bi1_vecc[1] = vand(light16[1], 				(unsigned short)2047);
 			bi1_vecc[2] = vand(light16[2], 				(unsigned short)2047);
 			bi1_vecc[3] = vand(light16[3], 				(unsigned short)2047);
-
+		#if VECC_16
 			bi1_vecc[4] = vand(light16[4], 				(unsigned short)2047);
 			bi1_vecc[5] = vand(light16[5], 				(unsigned short)2047);
 			bi1_vecc[6] = vand(light16[6], 				(unsigned short)2047);
 			bi1_vecc[7] = vand(light16[7], 				(unsigned short)2047);
-
+		#endif
 			bi0_vecc[0] = vsub((unsigned short)2048,     bi1_vecc[0]);
 			bi0_vecc[1] = vsub((unsigned short)2048,     bi1_vecc[1]);
 			bi0_vecc[2] = vsub((unsigned short)2048,     bi1_vecc[2]);
 			bi0_vecc[3] = vsub((unsigned short)2048,     bi1_vecc[3]);
+		#if VECC_16	
 			bi0_vecc[4] = vsub((unsigned short)2048,     bi1_vecc[4]);
 			bi0_vecc[5] = vsub((unsigned short)2048,     bi1_vecc[5]);
 			bi0_vecc[6] = vsub((unsigned short)2048,     bi1_vecc[6]);
 			bi0_vecc[7] = vsub((unsigned short)2048,     bi1_vecc[7]);
-
+		#endif
 			vacc0 	 	= vmpy(v0, bi0_vecc[0]);			
 			vacc1 	 	= vmpy(v2, bi0_vecc[1]);			
 			vacc2 	 	= vmpy(v4, bi0_vecc[2]);			
@@ -361,7 +365,7 @@ void wdr_simu_cevaxm4()
 			weight16[2] =  (ushort16)vmac(psl, v5, bi1_vecc[2], vacc2, (unsigned char)11);
 			weight16[3] =  (ushort16)vmac(psl, v7, bi1_vecc[3], vacc3, (unsigned char)11);
 
-
+		#if VECC_16
 			vacc0 	 	= vmpy(v16, bi0_vecc[4]);			
 			vacc1 	 	= vmpy(v18, bi0_vecc[5]);			
 			vacc2 	 	= vmpy(v20, bi0_vecc[6]);			
@@ -371,7 +375,7 @@ void wdr_simu_cevaxm4()
 			weight16[5] =  (ushort16)vmac(psl, v19, bi1_vecc[5], vacc1, (unsigned char)11);
 			weight16[6] =  (ushort16)vmac(psl, v21, bi1_vecc[6], vacc2, (unsigned char)11);
 			weight16[7] =  (ushort16)vmac(psl, v23, bi1_vecc[7], vacc3, (unsigned char)11);
-
+		#endif
 			
 		#if DEBUG_VECC
 			ret += check_ushort16_vecc_result(weight1,  v6, 16);
